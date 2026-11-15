@@ -35,5 +35,5 @@ The AI writing guide leans on other people's work, credited in the guide. One sk
 ## Projects
 
 - [Listening notes](https://joe-garvin.github.io/claude-workbench/listening-notes/). The pages the music digest skill publishes each week.
-- [Art](https://joe-garvin.github.io/claude-workbench/art/). Generative pictures I've made with code, written in JavaScript.
+- [Working drawings](https://joe-garvin.github.io/claude-workbench/art/). Generative pictures I've made with code, written in JavaScript.
 - [Tour de France 2026 tracker](https://joe-garvin.github.io/claude-workbench/tdf-2026/). A dashboard of standings, stage results, and watch times that refreshed itself during the race. The scraper and its tests are in [docs/tdf-2026/scraper](docs/tdf-2026/scraper).
