@@ -14,6 +14,10 @@
   header h1 { font-size:34px; font-weight:400; letter-spacing:.01em; margin:0 0 10px; }
   header p { margin:0; color:var(--dim); font-size:15px; }
   header p.name { color:var(--text); font-size:17px; margin-bottom:2px; }
+  nav.pages { display:flex; gap:22px; margin-top:22px; font-size:15px; }
+  nav.pages a { color:var(--dim); text-decoration:none; padding-bottom:3px; border-bottom:1px solid transparent; }
+  nav.pages a:hover { color:var(--text); }
+  nav.pages a.on { color:var(--text); border-bottom-color:var(--dim); }
   .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:44px 28px; }
   .tile { display:block; color:inherit; text-decoration:none; }
   .tile .frame { aspect-ratio:4/3; background:var(--tile); overflow:hidden; }
@@ -56,6 +60,7 @@
   <h1>Working drawings</h1>
   <p class="name">Joe Garvin</p>
   <p>Written with Claude Code, Fable 5.2 and Opus 5.5, drawn by JavaScript on an HTML canvas</p>
+  <nav class="pages"><a class="on" href="index.html">Code</a><a href="gemini.html">Gemini</a></nav>
 </header>
 <div class="grid" id="grid"></div>
 </main>
@@ -80,6 +85,7 @@ const WORKS = [
   { id:'painted-wheels', title:'Painted wheels', images:[['painted-wheels-1',5120,2880],['painted-wheels-2',2560,1440],['painted-wheels-3',2560,1440],['painted-wheels-4',2560,1440]] },
   { id:'teeming', title:'Teeming', images:[['teeming',5120,2880]] },
   { id:'rings', title:'Rings', images:[['rings-built-from-marks',5120,2880]] },
+  { id:'combine', title:'Combine', images:[['combine-1',5120,2880],['combine-2',2560,1440],['combine-3',2560,1440],['combine-4',2560,1440]] },
   { id:'seaweed-head', title:'Seaweed head', images:[['seaweed-head',5120,2880]] },
   { id:'still-life', title:'Still life', images:[['pinned-still-life-1',5120,6400],['pinned-still-life-2',5120,6400]] },
   { id:'bars-and-planes-on-black', title:'Bars and planes on black', images:[['bars-and-planes-on-black',5120,4275]] },
