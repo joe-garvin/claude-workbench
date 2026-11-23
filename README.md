@@ -26,6 +26,7 @@ Several are written around my own setup (an Obsidian vault, a notes repo, my nam
 ## Guides
 
 - [Avoiding AI writing](https://joe-garvin.github.io/claude-workbench/avoid-ai-writing.html). A reference on what makes writing sound machine-made, how detection works, and how to edit it out. The source notes are in [guides/avoiding-ai-writing](guides/avoiding-ai-writing).
+- [UI craft](guides/ui-craft.md). The rules I give Claude when it builds web pages and artifacts, so they look chosen by a person rather than generated: fonts, banned stock styles, color and contrast, type, motion, and a review checklist.
 - [Knowledge base agent guide](guides/knowledge-base-agent-guide.md). How to build a Claude Code agent that researches a topic, judges its sources, and builds a body of notes over time.
 - [Automated book notes](https://gist.github.com/joe-garvin/81b9332bdbf1adce95bf23dc1f90147f). A tutorial for turning a book file into structured notes with Claude, NotebookLM, and Obsidian.
 - [Weekly music digest](https://gist.github.com/joe-garvin/1b57111a07c22b42a71ecb81473d7852). The design behind the music-discovery-digest skill.
