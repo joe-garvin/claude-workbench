@@ -1,10 +1,10 @@
 # UI craft research rules
 
-The research behind the `ui-craft` skill: specific, checkable design details that keep pages, artifacts, and UIs Claude builds from looking machine-made, each with its source. A rule goes into the skill once it has held up in a real build. Full source links are at the end.
+The research behind the `ui-craft` skill: specific, checkable design details that keep pages, artifacts, and UIs Claude builds from looking machine-made, each with its source. A rule goes into the skill once it has held up in a real build, so some rules here, like the Charles Liu section, aren't in the skill yet. Full source links are at the end.
 
 ## Starter rules
 
-From a screenshot of craft rules saved 2026-11-21, with notes from the first research pass.
+From a screenshot of a [Charles Liu reel](https://www.tiktok.com/@charles.unemployed/video/7708439548958723348) saved 2026-11-21, with notes from the first research pass.
 
 - **Nested corners.** Inner radius = outer radius − padding. Clamp at 0, and skip the math for pills and full circles.
 - **Borders.** Use alpha colors, such as `rgb(0 0 0 / 0.12)` on light and `rgb(255 255 255 / 0.1)` on dark, so borders pick up the background. On tinted backgrounds, shift borders toward the background hue.
@@ -143,6 +143,44 @@ Added 2026-11-22. Each rule was checked against the first-pass rules to avoid re
 - No placeholder content tells: "John Doe," "Acme," round-number stats like "99.9%," or filler verbs like "elevate" and "unleash" (Laith0003).
 - Native `<select>` gets an explicit background and text color so it reads in dark mode on Windows (Vercel AGENTS.md).
 
+## Charles Liu's reels
+
+Added 2026-11-27 from Charles Liu's design reels ([@charles.unemployed](https://www.tiktok.com/@charles.unemployed) on TikTok, which mirrors his Instagram). Only tips not already covered above. Every rule links its reel. These are in the research file but not yet in the skill, because a rule goes into the skill only after it holds up in a real build.
+
+### Slop fingerprints
+From [AI design trends](https://www.tiktok.com/@charles.unemployed/video/7705095150845824257) and [things AI overuses](https://www.tiktok.com/@charles.unemployed/video/7703999846109318408). He likes many of these himself. The tell is reaching for them by default.
+- No pulsing "live" dots or sparkle icons as decoration.
+- No endless marquees or logo tickers.
+- No decorative flowcharts or detailed diagrams that carry no real information.
+- No dark gradient hero sections.
+- No trend textures by default: pixel loaders, dithering, ASCII images over video, Monet or Renaissance painting backgrounds, "classical" branding.
+- Don't wrap text around shapes as a flourish.
+- Don't overuse dividers, and don't scatter many shades and opacities of one color.
+- No squircles.
+- No breadcrumbs where there's no real hierarchy.
+- No subtitle under every heading, and no periods at the end of titles.
+- No confetti on success screens ([thank-you screen](https://www.tiktok.com/@charles.unemployed/video/7706223830523546900)).
+- Tie the background to the subject instead of a generic surface, like a sky behind a flight tracker's login ([login makeover](https://www.tiktok.com/@charles.unemployed/video/7705480372376980754)).
+
+### Choosing the accent
+Extends the one-accent rule above. From his accent series.
+- Make the accent the brightest color on the page so nothing competes with it ([reel](https://www.tiktok.com/@charles.unemployed/video/7712140213845331221)).
+- Pick it from across the color wheel from the page's colors ([reel](https://www.tiktok.com/@charles.unemployed/video/7708051977237761281)).
+- Warm page, cool accent. Cool page, warm accent ([reel](https://www.tiktok.com/@charles.unemployed/video/7708791593809104149)).
+- On a dark page, go bright. On a bright page, go deep ([reel](https://www.tiktok.com/@charles.unemployed/video/7712927216576908565)).
+- Take the accent from the subject itself: the paint, the fabric, the light in the photo ([reel](https://www.tiktok.com/@charles.unemployed/video/7711030809443994881)).
+- Add the color the page is missing, not one you happen to like ([reel](https://www.tiktok.com/@charles.unemployed/video/7707328470711422214)).
+- Two colors that get along, then one that doesn't ([reel](https://www.tiktok.com/@charles.unemployed/video/7708437849615453446)).
+- If two colors fight for attention, lower the chroma of one ([reel](https://www.tiktok.com/@charles.unemployed/video/7709208047117241607)).
+- Squint test: if more than one thing stands out, there's too much brand color ([reel](https://www.tiktok.com/@charles.unemployed/video/7711428163355577621)).
+
+### Process before building
+From [how to unslop](https://www.tiktok.com/@charles.unemployed/video/7712529370555927816).
+- Gather references first: screenshots of sites you like or past work you're proud of. His sources: Construct Design, Mobbin, ScreensDesign, Spotted in Prod, Awwwards, One Page Love, Cosmos, Taste, Recent.
+- Use familiar layouts (Jakob's law). Look at how comparable apps solve the screen before inventing one.
+- Get the layout and flow right in a wireframe before choosing fonts and colors.
+- For new designs, sketch several clearly different directions and combine the best parts, rather than polishing the first idea.
+
 ## House defaults
 
 Two rules that are my own choices rather than findings from the research.
@@ -172,6 +210,7 @@ Two rules that are my own choices rather than findings from the research.
 - [Utopia, designing with fluid type scales](https://utopia.fyi/blog/designing-with-fluid-type-scales/) and the [type calculator](https://utopia.fyi/type/calculator).
 - [Every Layout, axioms](https://every-layout.dev/rudiments/axioms/), on measure as a global `ch` rule.
 - [Typewolf typography cheatsheet](https://www.typewolf.com/cheatsheet), [40 best Google Fonts](https://www.typewolf.com/google-fonts), and [Google Fonts Knowledge on pairing](https://fonts.google.com/knowledge/choosing_type/pairing_typefaces).
+- [Charles Liu on TikTok](https://www.tiktok.com/@charles.unemployed), which mirrors his [Instagram reels](https://www.instagram.com/charles.unemployed/): AI-slop fingerprints, accent picking, and process. Also the source of the starter-rules screenshot ([reel](https://www.tiktok.com/@charles.unemployed/video/7708439548958723348)).
 
 ## Reading list
 
@@ -187,3 +226,4 @@ Two rules that are my own choices rather than findings from the research.
 - 2026-11-21: Set two house defaults: a light/dark toggle that follows the system theme first, and a 14px minimum text size.
 - 2026-11-22: Second pass covered Butterick, Refactoring UI, Apple HIG, Emil Kowalski's apple-design, Vercel AGENTS.md, ui-skills.com, Laith0003, Evil Martians, APCA, Josh Comeau, Utopia, Every Layout, and Typewolf. Added about 70 rules.
 - 2026-11-22: Six second-pass groups went into the skill: APCA contrast, type settings (measure, leading, tracking, rem), translucent bars, motion limits, placeholder giveaways, and one accent with restrained gradients.
+- 2026-11-27: Swept about 55 of Charles Liu's design reels. Added slop fingerprints, accent rules, and process rules. Found that the starter-rules screenshot came from his reel. Not yet in the skill.

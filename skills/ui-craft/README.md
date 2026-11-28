@@ -1,6 +1,6 @@
 # ui-craft
 
-A Claude skill that applies a set of design rules whenever Claude builds or restyles a web page, HTML artifact, dashboard, or small site. The rules keep the result from looking machine-made: no stock AI styles, and a list of small, checkable craft details drawn from Vercel, Apple, Butterick, Refactoring UI, Emil Kowalski, and others.
+A Claude skill that applies a set of design rules whenever Claude builds or restyles a web page, HTML artifact, dashboard, or small site. The rules keep the result from looking machine-made: no stock AI styles, and a list of small, checkable craft details drawn from Vercel, Apple, Butterick, Refactoring UI, Emil Kowalski, Charles Liu, and others.
 
 For a readable version of the same rules, see the [UI craft guide](../../guides/ui-craft.md).
 
