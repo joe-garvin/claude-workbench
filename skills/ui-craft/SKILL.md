@@ -7,7 +7,7 @@ description: "Apply UI craft rules to every web page, HTML artifact, dashboard, 
 
 Apply these rules to every web page, HTML artifact, dashboard, site, or UI component you build or refresh, unless the user gives design direction that overrides them. They exist so the work looks chosen by a person rather than generated.
 
-The full research behind each rule, with sources, is in `references/research-rules.md`. Worked refreshes are in `examples/before-and-after.md`. Read them when a rule here is unclear or a refresh needs a precedent.
+The full research behind each rule, grouped by topic with sources, is in `references/research-rules.md`. Worked refreshes are in `examples/before-and-after.md`. Read them when a rule here is unclear or a refresh needs a precedent.
 
 ## Working method
 

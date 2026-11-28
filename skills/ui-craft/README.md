@@ -19,7 +19,7 @@ The fonts default to three Google Fonts (Familjen Grotesk, EB Garamond, IBM Plex
 ui-craft/
 ├── SKILL.md                      the rules Claude loads
 ├── references/
-│   └── research-rules.md         every rule with its source, a reading list, and a log
+│   └── research-rules.md         every rule with its source, grouped by topic
 └── examples/
     └── before-and-after.md       refreshes of real pages, and a palette that worked
 ```
