@@ -4,7 +4,7 @@
 
 The rules I give Claude when it builds web pages, HTML artifacts, dashboards, and small sites for me. They exist so the work looks chosen by a person rather than generated: no stock AI styles, and a set of small, checkable craft details drawn from people who have written carefully about interfaces. Credits are at the end.
 
-To use it, paste it into a Claude project's instructions or knowledge, or turn it into a skill. Two habits make it work. Choices you mark in a page's code as deliberate (I use the comment "Joe's pick") override every rule here, and Claude should flag the conflict rather than change them. When refreshing an existing page, Claude audits first, lists each problem with its fix, and waits for an OK before applying them in one batch.
+To use it, paste it into a Claude project's instructions or knowledge, or install the [ui-craft skill](../skills/ui-craft), which carries the same rules. The skill folder also holds the [research rules with their sources](../skills/ui-craft/references/research-rules.md) and [before-and-after notes](../skills/ui-craft/examples/before-and-after.md) from refreshing real pages. Two habits make it work. Choices you mark in a page's code as deliberate (I use the comment "Joe's pick") override every rule here, and Claude should flag the conflict rather than change them. When refreshing an existing page, Claude audits first, lists each problem with its fix, and waits for an OK before applying them in one batch.
 
 Claude artifacts can only load fonts from Google Fonts or from files shipped with the artifact, which shapes the font rules below. Outside artifacts, the same rules apply with more font choices.
 

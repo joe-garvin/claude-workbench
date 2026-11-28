@@ -20,13 +20,14 @@ Each skill is a folder with a `SKILL.md` that tells Claude when to use it and ho
 | [task-triage](skills/task-triage) | Sorts the inbox of an Obsidian task list into the right sections with priorities, and waits for approval before moving anything. |
 | [github-push](skills/github-push) | Saves a summary of the current conversation to a private notes repo, filed by project, area, resource, or archive. |
 | [music-discovery-digest](skills/music-discovery-digest) | Runs a weekly new-music digest: pulls from several sources, scores releases against a taste profile, and publishes a page. |
+| [ui-craft](skills/ui-craft) | Applies a set of design rules whenever Claude builds a web page or artifact, so it looks chosen by a person rather than generated. Comes with the research behind each rule and before-and-after notes. |
 
 Several are written around my own setup (an Obsidian vault, a notes repo, my name). To use one, add the folder to Claude as a skill, then read the file and change the names and paths to yours.
 
 ## Guides
 
 - [Avoiding AI writing](https://joe-garvin.github.io/claude-workbench/avoid-ai-writing.html). A reference on what makes writing sound machine-made, how detection works, and how to edit it out. The source notes are in [guides/avoiding-ai-writing](guides/avoiding-ai-writing).
-- [UI craft](guides/ui-craft.md). The rules I give Claude when it builds web pages and artifacts, so they look chosen by a person rather than generated: fonts, banned stock styles, color and contrast, type, motion, and a review checklist.
+- [UI craft](guides/ui-craft.md). The rules I give Claude when it builds web pages and artifacts, so they look chosen by a person rather than generated: fonts, banned stock styles, color and contrast, type, motion, and a review checklist. The [ui-craft skill](skills/ui-craft) carries the same rules for Claude to load.
 - [Knowledge base agent guide](guides/knowledge-base-agent-guide.md). How to build a Claude Code agent that researches a topic, judges its sources, and builds a body of notes over time.
 - [Automated book notes](https://gist.github.com/joe-garvin/81b9332bdbf1adce95bf23dc1f90147f). A tutorial for turning a book file into structured notes with Claude, NotebookLM, and Obsidian.
 - [Weekly music digest](https://gist.github.com/joe-garvin/1b57111a07c22b42a71ecb81473d7852). The design behind the music-discovery-digest skill.
