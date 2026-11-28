@@ -31,6 +31,10 @@ Several are written around my own setup (an Obsidian vault, a notes repo, my nam
 - [Knowledge base agent guide](guides/knowledge-base-agent-guide.md). How to build a Claude Code agent that researches a topic, judges its sources, and builds a body of notes over time.
 - [Automated book notes](https://gist.github.com/joe-garvin/81b9332bdbf1adce95bf23dc1f90147f). A tutorial for turning a book file into structured notes with Claude, NotebookLM, and Obsidian.
 - [Weekly music digest](https://gist.github.com/joe-garvin/1b57111a07c22b42a71ecb81473d7852). The design behind the music-discovery-digest skill.
+- [Building a visual taste profile](https://gist.github.com/joe-garvin/f6c2eb118eaf84ebce4f3842e92ee215). How to build a written profile of what you like in pictures, from images you've already saved, and use it to steer code drawings and image models.
+- [Using one Claude project to design the interface for another](https://gist.github.com/joe-garvin/7a31c38ab2da98aa7608a1a3da3e670b). How one Claude Code project made a music app's interface for another, with a shared notes folder, image-model mockups and code.
+- [Teaching Claude your music production taste](https://gist.github.com/joe-garvin/5439cc92d8977604f8b21be5563035e6). How to read your own projects, rate your tracks, measure them against reference records, and write a recipe Claude follows when it builds.
+- [Building a searchable index of your samples](https://gist.github.com/joe-garvin/1a6f16f9fb141ace05ba232238532130). How Claude Code can measure and tag a large sample library and build a local page for searching it in plain words.
 
 The AI writing guide leans on other people's work, credited in the guide. One skill I use every day and didn't write is Conor Bronsdon's [avoid-ai-writing](https://github.com/conorbronsdon/avoid-ai-writing).
 
