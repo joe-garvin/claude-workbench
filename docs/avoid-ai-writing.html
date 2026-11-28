@@ -5,535 +5,332 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Avoiding AI writing · Joe Garvin</title>
 <meta name="description" content="A working reference by Joe Garvin on recognizing and removing the patterns that make writing sound AI-generated.">
+<meta name="theme-color" content="#eef3f6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#161d26" media="(prefers-color-scheme: dark)">
+<script>
+(function () {
+  var saved = null;
+  try { saved = localStorage.getItem('aiw-theme'); } catch (e) {}
+  var theme = saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  document.documentElement.dataset.theme = theme;
+})();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:ital,wght@0,400..700;1,400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
+/* Design: "Proof sheet" direction, chosen by Joe 2026-11-28. Familjen Grotesk for text, IBM Plex Mono only for code. */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --coral: #a4513c;
-  --squid: #3d4257;
-  --wine: #3f6187;
-  --mist: #cfd6e0;
-  --white: #FFFFFF;
-  --bg: #f7f7f9;
-  --gray-100: #F3F3F3;
-  --gray-200: #E8E8E8;
-  --gray-300: #D0D0D0;
-  --gray-500: #888888;
-  --gray-700: #444444;
-  --gray-900: #1A1A1A;
-  --font-sans: 'Newsreader', 'Iowan Old Style', Palatino, Georgia, serif;
+  --font-sans: 'Familjen Grotesk', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-  --sidebar-w: 240px;
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 18px;
-  --radius-pill: 999px;
-  --shadow-sm: 0 1px 3px rgba(61,66,87,0.08);
+  /* Cool blue-gray page, deep ink-blue accent, highlighter yellow for flagged words */
+  --bg: oklch(96.5% 0.008 230);
+  --raise: oklch(98.5% 0.005 230);
+  --ink: oklch(24% 0.03 240);
+  --text: oklch(32% 0.03 240);
+  --muted: oklch(46% 0.025 240);
+  --line: oklch(24% 0.03 240 / 0.13);
+  --accent: oklch(40% 0.11 245);
+  --accent-hover: oklch(30% 0.12 245);
+  --hl: oklch(91% 0.14 100);
+  --hl-soft: oklch(94% 0.07 100);
+  --info-soft: oklch(93% 0.025 240);
+  --code-bg: oklch(24% 0.03 240);
+  --code-ink: oklch(92% 0.01 240);
+  --coral: var(--accent); /* kept for inline styles in the content */
+  --shadow: 0 1px 2px oklch(24% 0.03 240 / 0.06), 0 8px 24px -12px oklch(24% 0.03 240 / 0.18);
+  --toc-w: 15rem;
+  color-scheme: light;
+}
+[data-theme="dark"] {
+  --bg: oklch(20% 0.02 240);
+  --raise: oklch(24% 0.022 240);
+  --ink: oklch(94% 0.01 240);
+  --text: oklch(87% 0.012 240);
+  --muted: oklch(74% 0.02 240);
+  --line: rgb(255 255 255 / 0.1);
+  --accent: oklch(80% 0.09 240);
+  --accent-hover: oklch(88% 0.07 240);
+  --hl: oklch(52% 0.1 95);
+  --hl-soft: oklch(30% 0.045 95);
+  --info-soft: oklch(27% 0.03 240);
+  --code-bg: oklch(15% 0.02 240);
+  --code-ink: oklch(90% 0.01 240);
+  --shadow: none;
+  color-scheme: dark;
 }
 
-html { scroll-behavior: smooth; }
-.sidebar, .page-header { --coral: #e9b3a3; }
-.logo-mark { --wine: #2b2f40; }
-@media (max-width: 720px) { .ds-table { display: block; overflow-x: auto; max-width: 100%; } }
+html { -webkit-text-size-adjust: 100%; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
 
 body {
   font-family: var(--font-sans);
+  font-size: 1.0625rem;
+  line-height: 1.55;
   background: var(--bg);
-  color: var(--gray-900);
-  line-height: 1.65;
+  color: var(--text);
   min-height: 100vh;
+  min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
+  touch-action: manipulation;
 }
+h1, h2, h3, h4 { color: var(--ink); text-wrap: balance; }
+p, li, td { text-wrap: pretty; }
+strong { font-weight: 700; color: var(--ink); }
+a { color: var(--accent); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.18em; }
+a:hover { color: var(--accent-hover); text-decoration-thickness: 2px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
 
-/* ── Sidebar ── */
-.sidebar {
-  position: fixed;
-  top: 0; left: 0;
-  width: var(--sidebar-w);
-  height: 100vh;
-  background: var(--squid);
-  padding: 2rem 1.5rem;
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-  z-index: 100;
-}
+.skip { position: absolute; left: 1rem; top: -4rem; background: var(--ink); color: var(--bg); padding: 0.5rem 0.75rem; border-radius: 4px; z-index: 30; }
+.skip:focus { top: 1rem; }
 
-.sidebar-logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 2rem;
-  text-decoration: none;
-}
-
-.logo-mark {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: var(--wine);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--coral);
-  letter-spacing: -0.02em;
-  flex-shrink: 0;
-}
-
-.logo-text {
-  font-size: 12px;
-  font-weight: 600;
-  color: rgba(255,255,255,0.9);
-  line-height: 1.3;
-}
-
-.logo-text span {
-  display: block;
-  font-weight: 300;
-  font-size: 10px;
-  color: rgba(255,255,255,0.4);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  margin-top: 1px;
-}
-
-.nav-section-label {
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.25);
-  margin: 1.25rem 0 0.4rem;
-  padding-left: 2px;
-}
-
-.nav-link {
-  display: block;
-  font-size: 13px;
-  font-weight: 400;
-  color: rgba(255,255,255,0.55);
-  text-decoration: none;
-  padding: 5px 8px;
-  border-radius: var(--radius-sm);
-  margin-bottom: 1px;
-  transition: color 0.15s, background 0.15s;
-  line-height: 1.4;
-}
-
-.nav-link:hover { color: rgba(255,255,255,0.95); background: rgba(255,255,255,0.06); }
-.nav-link.active { color: var(--coral); background: rgba(164,81,60,0.12); font-weight: 500; }
-
-.sidebar-version {
-  margin-top: auto;
-  padding-top: 2rem;
-  font-size: 10px;
-  color: rgba(255,255,255,0.25);
-  letter-spacing: 0.05em;
-  line-height: 1.6;
-}
-.sidebar-version a { color: rgba(255,255,255,0.45); text-decoration: none; }
-.sidebar-version a:hover { color: var(--coral); }
-
-/* ── Main ── */
-.main {
-  margin-left: var(--sidebar-w);
-  width: calc(100% - var(--sidebar-w));
-  min-width: 0;
-  padding: 3rem 4rem 6rem;
-}
-.inner { max-width: 880px; }
-
-/* ── Page header ── */
-.page-header {
-  background: var(--squid);
-  border-radius: var(--radius-xl);
-  padding: 3rem;
-  margin-bottom: 3.5rem;
-  position: relative;
-  overflow: hidden;
-}
-.page-header::before {
-  content: 'ai';
-  position: absolute;
-  right: -20px; bottom: -60px;
-  font-size: 240px; font-weight: 700;
-  color: rgba(255,255,255,0.03);
-  letter-spacing: -0.05em; line-height: 1;
-  pointer-events: none; font-family: var(--font-sans);
-}
-.page-header-eyebrow { font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--coral); margin-bottom: 0.75rem; }
-.page-header-title { font-size: 40px; font-weight: 700; letter-spacing: -0.03em; color: #fff; line-height: 1.05; margin-bottom: 1rem; max-width: 580px; }
-.page-header-desc { font-size: 15px; color: rgba(255,255,255,0.55); line-height: 1.7; max-width: 540px; }
-.header-meta { display: flex; gap: 2rem; margin-top: 2rem; flex-wrap: wrap; }
-.header-meta-item { display: flex; flex-direction: column; gap: 2px; }
-.header-meta-label { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.25); }
-.header-meta-value { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.75); }
-
-/* ── Sections ── */
-.section { margin-bottom: 4.5rem; scroll-margin-top: 1.5rem; }
-.section-eyebrow { font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--coral); margin-bottom: 0.5rem; }
-.section-title { font-size: 30px; font-weight: 700; letter-spacing: -0.025em; color: var(--squid); margin-bottom: 0.6rem; line-height: 1.1; }
-.section-desc { font-size: 15px; color: var(--gray-700); line-height: 1.7; max-width: 640px; margin-bottom: 2rem; }
-.divider { border: none; border-top: 1px solid var(--gray-200); margin: 3rem 0; }
-
-.subsection { margin-bottom: 2.25rem; }
-.subsection-label {
-  font-size: 10px; font-weight: 600; letter-spacing: 0.1em;
-  text-transform: uppercase; color: var(--gray-500);
-  margin-bottom: 1rem; padding-bottom: 8px;
-  border-bottom: 1px solid var(--gray-200);
+/* Top bar */
+.topbar {
   display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+  padding: 0.5rem 2rem; border-bottom: 1px solid var(--line);
+  font-size: 0.9375rem;
 }
-.subsection-label .label-aside { color: var(--gray-300); font-weight: 500; letter-spacing: 0.06em; }
+.topbar .brand { color: var(--ink); text-decoration: none; font-weight: 700; }
+.topbar .brand span { color: var(--muted); font-weight: 400; }
+.theme-toggle {
+  width: 44px; height: 44px; display: grid; place-items: center;
+  background: none; border: 0; border-radius: 8px; color: var(--muted); cursor: pointer;
+  transition: transform 0.15s ease-out;
+}
+.theme-toggle:hover { color: var(--ink); }
+.theme-toggle:active { transform: scale(0.97); }
+.theme-toggle .moon { display: none; }
+[data-theme="dark"] .theme-toggle .sun { display: none; }
+[data-theme="dark"] .theme-toggle .moon { display: block; }
 
-h3.subsection-h {
-  font-size: 18px; font-weight: 600; color: var(--squid);
-  margin: 0 0 0.5rem; letter-spacing: -0.01em; line-height: 1.3;
+/* Layout: reading column with contents on the right */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 46rem) var(--toc-w);
+  gap: 4rem;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 3rem 2rem 6rem;
 }
-h4.minor-h {
-  font-size: 14px; font-weight: 600; color: var(--squid);
-  margin: 1.25rem 0 0.4rem; letter-spacing: -0.005em;
-}
+.main { min-width: 0; }
 
-p.copy { font-size: 15px; color: var(--gray-700); line-height: 1.75; margin-bottom: 1rem; }
-p.copy strong { color: var(--gray-900); font-weight: 600; }
-p.copy em { color: var(--gray-900); font-style: italic; }
-p.copy a, .card a, .ds-table a { color: var(--coral); text-decoration: none; border-bottom: 1px solid rgba(164,81,60,0.35); }
-p.copy a:hover, .card a:hover, .ds-table a:hover { border-bottom-color: var(--coral); }
-
-ul.copy-list, ol.copy-list {
-  font-size: 15px; color: var(--gray-700); line-height: 1.75;
-  padding-left: 1.4em; margin-bottom: 1rem;
+/* Contents */
+.toc { position: sticky; top: 1.5rem; align-self: start; max-height: calc(100vh - 3rem); overflow-y: auto; font-size: 0.9375rem; }
+.toc summary { display: none; }
+.toc-group { font-weight: 700; color: var(--ink); margin: 1.25rem 0 0.2rem; }
+.toc-group:first-of-type { margin-top: 0; }
+.nav-link { display: block; color: var(--muted); text-decoration: none; padding: 0.22rem 0; line-height: 1.35; }
+.nav-link:hover { color: var(--ink); text-decoration: none; }
+.nav-link.active {
+  color: var(--ink); font-weight: 600;
+  text-decoration: underline; text-decoration-color: var(--hl);
+  text-decoration-thickness: 0.4em; text-underline-offset: -0.18em; text-decoration-skip-ink: none;
 }
-ul.copy-list li, ol.copy-list li { margin-bottom: 0.3rem; }
-ul.copy-list li::marker { color: var(--coral); }
-ol.copy-list li::marker { color: var(--coral); font-weight: 600; }
+.toc-foot { margin-top: 1.5rem; color: var(--muted); }
 
-/* ── Card ── */
-.card {
-  background: var(--white);
-  border: 1px solid var(--gray-200);
-  border-radius: var(--radius-lg);
-  padding: 1.5rem 1.75rem;
+/* Intro */
+.intro { margin-bottom: 3rem; }
+.intro h1 { font-size: clamp(2.5rem, 1.8rem + 3vw, 3.75rem); font-weight: 700; line-height: 1; letter-spacing: -0.03em; margin-bottom: 1rem; }
+.intro .lede { font-size: 1.3rem; line-height: 1.4; color: var(--ink); max-width: 38ch; }
+.intro .meta { color: var(--muted); margin-top: 1rem; max-width: 60ch; }
+
+/* Sections */
+.section { margin-bottom: 5rem; scroll-margin-top: 1.5rem; }
+.section-title { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 0.6rem; }
+.section-desc { color: var(--muted); max-width: 62ch; margin-bottom: 2rem; }
+.subsection { margin-bottom: 2.5rem; }
+.subsection-label {
+  font-size: 1.1875rem; font-weight: 700; color: var(--ink); letter-spacing: -0.01em;
+  margin-bottom: 0.75rem;
+  display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; flex-wrap: wrap;
 }
-.card + .card { margin-top: 12px; }
+.subsection-label .label-aside { font-size: 0.9375rem; font-weight: 400; color: var(--muted); }
+h3.subsection-h { font-size: 1.125rem; font-weight: 700; line-height: 1.3; margin-bottom: 0.4rem; }
+h4.minor-h { font-size: 1.0625rem; font-weight: 700; margin: 1.25rem 0 0.25rem; }
+h4.minor-h:first-child { margin-top: 0; }
+
+p.copy { margin-bottom: 1rem; max-width: 68ch; }
+p.copy em, .do-box em, .dont-box em { color: var(--ink); }
+ul.copy-list, ol.copy-list { padding-left: 1.35em; margin-bottom: 1rem; max-width: 68ch; }
+ul.copy-list li, ol.copy-list li { margin-bottom: 0.35rem; padding-left: 0.2em; }
+ul.copy-list li::marker { color: var(--muted); }
+ol.copy-list li::marker { color: var(--accent); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* Former cards: plain blocks separated by a rule, no boxes */
+.card { padding-top: 1rem; border-top: 1px solid var(--line); }
+.card + .card { margin-top: 1.5rem; }
 .card p:last-child, .card ul:last-child, .card ol:last-child { margin-bottom: 0; }
+.card:has(> table) { border-top: 0; padding-top: 0; }
 
-/* Grids */
-.grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
-.grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; }
-.grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
+.grid-2, .grid-3 { display: grid; gap: 2rem 2.5rem; align-items: start; }
+.grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.grid-2 > .card + .card, .grid-3 > .card + .card { margin-top: 0; }
 
-/* Metric tiles */
-.metric-card { background: var(--gray-100); border-radius: var(--radius-md); padding: 1rem 1.25rem; }
-.metric-label { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gray-500); margin-bottom: 6px; }
-.metric-value { font-size: 28px; font-weight: 700; letter-spacing: -0.03em; color: var(--squid); line-height: 1; }
-.metric-sub { font-size: 11px; color: var(--gray-500); margin-top: 5px; line-height: 1.4; }
+/* Callouts */
+.callouts { display: grid; gap: 1rem; margin-top: 2rem; }
+.alert { padding: 1.1rem 1.35rem; border-radius: 6px; max-width: 68ch; }
+.alert + .alert { margin-top: 1rem; }
+.callouts .alert + .alert { margin-top: 0; }
+.alert-dot { display: none; }
+.alert-title { font-weight: 700; color: var(--ink); margin-bottom: 0.2rem; }
+.alert-coral { background: var(--hl-soft); }
+.alert-info { background: var(--info-soft); }
+.alert-squid { background: transparent; border: 1px solid var(--line); }
 
-/* Badges */
-.badge { display: inline-flex; align-items: center; font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: var(--radius-pill); letter-spacing: 0.03em; }
-.badge-coral { background: rgba(164,81,60,0.12); color: #8a4030; }
-.badge-squid { background: rgba(61,66,87,0.08); color: var(--squid); }
-.badge-wine { background: rgba(63,97,135,0.12); color: var(--wine); }
-.badge-mist { background: rgba(109,141,176,0.35); color: #3f6187; }
-.badge-success { background: #dcfce7; color: #15803d; }
-.badge-warn { background: #fef3c7; color: #92400e; }
-.tag-row { display: flex; flex-wrap: wrap; gap: 6px; }
-
-/* Alerts */
-.alert { display: flex; gap: 12px; padding: 14px 18px; border-radius: var(--radius-md); margin-bottom: 12px; align-items: flex-start; }
-.alert-dot { width: 6px; height: 6px; border-radius: 50%; margin-top: 8px; flex-shrink: 0; }
-.alert-body { font-size: 14px; line-height: 1.6; }
-.alert-title { font-weight: 600; margin-bottom: 2px; }
-.alert-coral { background: rgba(164,81,60,0.08); color: #74382a; }
-.alert-coral .alert-dot { background: var(--coral); }
-.alert-coral .alert-title { color: #8a4030; }
-.alert-info { background: rgba(109,141,176,0.25); color: #2a5a64; }
-.alert-info .alert-dot { background: #3f6187; }
-.alert-info .alert-title { color: #2a5a64; }
-.alert-squid { background: rgba(61,66,87,0.05); color: var(--gray-700); }
-.alert-squid .alert-dot { background: var(--squid); }
-.alert-squid .alert-title { color: var(--squid); }
-
-/* Do / Don't / Compare */
-.do-dont { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; margin-bottom: 1rem; }
-.do-box, .dont-box { border-radius: var(--radius-md); padding: 1rem 1.25rem; }
-.do-box { border: 1px solid rgba(34,197,94,0.25); background: rgba(34,197,94,0.04); }
-.dont-box { border: 1px solid rgba(239,68,68,0.25); background: rgba(239,68,68,0.04); }
-.do-label { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #16a34a; margin-bottom: 8px; }
-.dont-label { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #dc2626; margin-bottom: 8px; }
-.do-box p, .dont-box p { font-size: 14px; color: var(--gray-700); line-height: 1.6; }
+/* Compare blocks */
+.do-dont { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2rem; margin-bottom: 1rem; }
+.do-box, .dont-box { padding-top: 0.9rem; border-top: 3px solid var(--line); }
+.do-box { border-top-color: var(--accent); }
+.do-label, .dont-label { font-weight: 700; color: var(--ink); margin-bottom: 0.35rem; }
+.do-label::before { content: "Better: "; color: var(--accent); }
 .do-box p + p, .dont-box p + p { margin-top: 0.5rem; }
-.do-box em, .dont-box em { font-style: italic; color: var(--gray-900); }
 
 /* Tables */
-.ds-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.ds-table th { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gray-500); padding: 10px 14px 10px 0; border-bottom: 1px solid var(--gray-200); text-align: left; vertical-align: bottom; }
-.ds-table td { padding: 11px 14px 11px 0; border-bottom: 1px solid var(--gray-200); vertical-align: top; color: var(--gray-900); line-height: 1.5; }
-.ds-table tr:last-child td { border-bottom: none; }
-.ds-table td.replace { color: var(--wine); font-weight: 500; }
-.ds-table td.with { color: var(--gray-700); }
-.mono { font-family: var(--font-mono); font-size: 12px; color: var(--gray-500); }
-.cell-strike { color: var(--gray-500); text-decoration: line-through; text-decoration-color: var(--coral); text-decoration-thickness: 1.5px; }
+.ds-table { width: 100%; border-collapse: collapse; }
+.ds-table th { text-align: left; vertical-align: bottom; font-size: 0.9375rem; font-weight: 600; color: var(--muted); padding: 0.5rem 1rem 0.5rem 0; border-bottom: 2px solid var(--ink); }
+.ds-table td { padding: 0.6rem 1rem 0.6rem 0; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.45; }
+.ds-table td.replace { color: var(--ink); font-weight: 600; }
+.ds-table td.replace, .cell-strike { -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+.ds-table td.replace { background: none; }
+.ds-table td.replace > :first-child, .hl { background: linear-gradient(transparent 55%, var(--hl) 55% 92%, transparent 92%); }
+.cell-strike { color: var(--ink); font-weight: 600; background: linear-gradient(transparent 55%, var(--hl) 55% 92%, transparent 92%); }
+.mono { font-size: 0.9375rem; color: var(--muted); }
+.table-wrap { overflow-x: auto; }
 
-/* Pull-quote */
-.pull-quote {
-  border-left: 3px solid var(--coral);
-  padding: 0.5rem 0 0.5rem 1.5rem;
-  margin: 1.5rem 0;
-  font-size: 17px;
-  line-height: 1.55;
-  color: var(--squid);
-  font-weight: 400;
-}
-.pull-quote .attr { display: block; font-size: 12px; color: var(--gray-500); font-weight: 500; margin-top: 0.6rem; letter-spacing: 0.02em; }
+/* Pull quote */
+.pull-quote { margin: 2rem 0; padding-left: 1.25rem; border-left: 3px solid var(--hl); font-size: 1.25rem; line-height: 1.4; color: var(--ink); max-width: 46ch; }
+.pull-quote .attr { display: block; font-size: 0.9375rem; color: var(--muted); margin-top: 0.6rem; }
 
-/* TOC / step list */
-.workflow-list { counter-reset: step; display: grid; grid-template-columns: 1fr; gap: 10px; }
-.workflow-step {
-  background: var(--white); border: 1px solid var(--gray-200);
-  border-radius: var(--radius-md);
-  padding: 1rem 1.25rem 1rem 3.5rem;
-  position: relative;
-}
+/* Editorial workflow */
+.workflow-list { counter-reset: step; display: grid; gap: 1.25rem; max-width: 66ch; }
+.workflow-step { position: relative; padding-left: 2.25rem; }
 .workflow-step::before {
-  counter-increment: step;
-  content: counter(step, decimal-leading-zero);
-  position: absolute; left: 1rem; top: 1rem;
-  font-family: var(--font-mono); font-size: 12px;
-  color: var(--coral); font-weight: 500; letter-spacing: 0.04em;
+  counter-increment: step; content: counter(step) ".";
+  position: absolute; left: 0; top: 0;
+  font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums;
 }
-.workflow-step h4 { font-size: 15px; font-weight: 600; color: var(--squid); margin-bottom: 0.25rem; letter-spacing: -0.005em; }
-.workflow-step p { font-size: 14px; color: var(--gray-700); line-height: 1.6; }
+.workflow-step h4 { font-size: 1.0625rem; font-weight: 700; margin-bottom: 0.15rem; }
 
-/* Tier banner */
-.tier-banner {
-  display: flex; align-items: center; gap: 14px;
-  padding: 12px 16px;
-  border-radius: var(--radius-md);
-  margin-bottom: 14px;
-  font-size: 13px;
+/* Tier note */
+.tier-banner { margin-bottom: 1.25rem; padding-left: 1rem; border-left: 3px solid var(--hl); color: var(--text); max-width: 68ch; }
+.tier-num { font-weight: 700; color: var(--ink); margin-right: 0.35rem; }
+
+/* Phrase lists */
+.phrase-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 2rem; }
+.phrase-grid .phrase-line { padding: 0.5rem 0; border-bottom: 1px solid var(--line); }
+.phrase-line .src { color: var(--ink); font-weight: 600; }
+.phrase-line .arrow { color: var(--muted); margin: 0 0.4rem; }
+.phrase-line .fix { color: var(--muted); }
+
+/* Tools */
+.tool-card { display: flex; flex-direction: column; gap: 0.3rem; padding-top: 1rem; border-top: 1px solid var(--line); min-width: 0; }
+.tool-card.featured { border-top: 3px solid var(--ink); }
+.tool-card .tool-name { font-size: 1.1875rem; font-weight: 700; color: var(--ink); }
+.tool-card .tool-name .star { color: var(--accent); margin-left: 0.25rem; }
+.tool-card .tool-meta { font-size: 0.9375rem; color: var(--muted); }
+.tool-card .tool-desc { max-width: 62ch; }
+.tool-card .tool-link { font-size: 0.9375rem; overflow-wrap: anywhere; }
+.tag-row { display: block; font-size: 0.9375rem; font-weight: 600; color: var(--muted); order: 2; }
+.badge + .badge::before { content: " · "; font-weight: 400; }
+.badge-coral { color: var(--accent); }
+
+/* Code */
+.code-block, pre {
+  font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.65;
+  background: var(--code-bg); color: var(--code-ink);
+  padding: 1rem 1.25rem; border-radius: 6px; overflow-x: auto; white-space: pre; margin: 0.75rem 0;
 }
-.tier-1 { background: rgba(164,81,60,0.1); color: #74382a; }
-.tier-2 { background: rgba(63,97,135,0.1); color: var(--wine); }
-.tier-3 { background: rgba(109,141,176,0.3); color: #2a5a64; }
-.tier-banner strong { font-weight: 600; }
-.tier-num { font-family: var(--font-mono); font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 4px; background: rgba(255,255,255,0.5); }
+code { font-family: var(--font-mono); font-size: 0.9em; }
 
-/* Phrase column lists */
-.phrase-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 6px 24px; font-size: 14px; color: var(--gray-700); line-height: 1.55; }
-.phrase-grid .phrase-line { padding: 5px 0; border-bottom: 1px dashed var(--gray-200); }
-.phrase-grid .phrase-line:last-child, .phrase-grid .phrase-line:nth-last-child(2) { border-bottom: none; }
-.phrase-line .src { color: var(--gray-900); font-weight: 500; }
-.phrase-line .arrow { color: var(--coral); margin: 0 6px; font-weight: 500; }
-.phrase-line .fix { color: var(--gray-500); }
-
-/* Tool cards */
-.tool-card {
-  background: var(--white); border: 1px solid var(--gray-200);
-  border-radius: var(--radius-md);
-  padding: 1.1rem 1.35rem;
-  display: flex; flex-direction: column; gap: 6px;
-}
-.tool-card .tool-name { font-size: 15px; font-weight: 600; color: var(--squid); letter-spacing: -0.005em; }
-.tool-card .tool-name .star { color: var(--coral); margin-left: 4px; font-size: 12px; }
-.tool-card .tool-meta { font-size: 11px; color: var(--gray-500); font-family: var(--font-mono); }
-.tool-card .tool-desc { font-size: 13px; color: var(--gray-700); line-height: 1.55; }
-.tool-card .tool-link { font-size: 12px; color: var(--coral); text-decoration: none; word-break: break-all; }
-.tool-card .tool-link:hover { text-decoration: underline; }
-
-/* Code block */
-.code-block {
-  background: var(--squid); color: rgba(255,255,255,0.85);
-  font-family: var(--font-mono); font-size: 12px; line-height: 1.7;
-  padding: 1rem 1.25rem; border-radius: var(--radius-md);
-  overflow-x: auto;
-  white-space: pre;
-  margin: 0.75rem 0;
-}
-
-/* Per-model row */
-.model-row { display: grid; grid-template-columns: 110px 1fr; gap: 1rem; padding: 10px 0; border-bottom: 1px solid var(--gray-200); align-items: baseline; }
-.model-row:last-child { border-bottom: none; }
-.model-name { font-size: 13px; font-weight: 600; color: var(--squid); }
-.model-words { font-size: 13px; color: var(--gray-700); font-family: var(--font-mono); line-height: 1.6; }
-
-/* TOC chips at top */
-.toc-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 1.5rem 0 0; }
-.toc-chip {
-  font-size: 11px; padding: 4px 12px; border-radius: 999px;
-  background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.7);
-  text-decoration: none; transition: background 0.15s, color 0.15s;
-  letter-spacing: 0.02em;
-}
-.toc-chip:hover { background: rgba(164,81,60,0.2); color: #fff; }
+/* Per-model signatures */
+.model-row { display: grid; grid-template-columns: 7rem 1fr; gap: 1rem; padding: 0.6rem 0; border-bottom: 1px solid var(--line); align-items: baseline; }
+.model-name { font-weight: 700; color: var(--ink); }
+.model-words { color: var(--text); }
 
 /* Footer */
-.footer { margin-top: 5rem; padding-top: 2rem; border-top: 1px solid var(--gray-200); font-size: 12px; color: var(--gray-500); line-height: 1.7; }
-.footer a { color: var(--gray-700); text-decoration: none; border-bottom: 1px solid var(--gray-300); }
-.footer a:hover { color: var(--coral); border-bottom-color: var(--coral); }
+.footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.9375rem; }
+.footer strong { color: var(--ink); }
 
-/* Mobile */
-@media (max-width: 900px) {
-  .grid-3, .grid-4 { grid-template-columns: repeat(2, minmax(0,1fr)); }
-  .phrase-grid { grid-template-columns: 1fr; }
+@media (max-width: 1000px) {
+  .grid-3 { grid-template-columns: 1fr; }
 }
-@media (max-width: 768px) {
-  :root { --sidebar-w: 0px; }
-  .sidebar {
-    position: static; width: 100%; height: auto;
-    padding: 1rem 1.5rem;
-    flex-direction: column;
-  }
-  .sidebar-version { display: none; }
-  .main { margin-left: 0; width: 100%; padding: 1.5rem 1.25rem 3rem; }
-  .page-header { padding: 2rem 1.5rem; }
-  .page-header-title { font-size: 28px; }
-  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
-  .do-dont { grid-template-columns: 1fr; }
-  .model-row { grid-template-columns: 1fr; gap: 4px; }
+@media (max-width: 860px) {
+  .layout { grid-template-columns: 1fr; gap: 0; padding: 1.5rem 1.25rem 4rem; }
+  .topbar { padding: 0.5rem 1.25rem; }
+  .toc { position: static; max-height: none; order: -1; margin-bottom: 2rem; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .toc summary { display: flex; justify-content: space-between; align-items: center; min-height: 44px; font-weight: 700; color: var(--ink); cursor: pointer; list-style: none; }
+  .toc summary::-webkit-details-marker { display: none; }
+  .toc summary::after { content: "Show"; font-weight: 400; color: var(--muted); }
+  .toc[open] summary::after { content: "Hide"; }
+  .toc[open] { padding-bottom: 1rem; }
+  .grid-2, .do-dont, .phrase-grid { grid-template-columns: 1fr; }
+  .model-row { grid-template-columns: 1fr; gap: 0.15rem; }
+  .copy-list[style*="columns"] { columns: 1 !important; }
+  .ds-table { display: block; overflow-x: auto; }
 }
-
-/* Print */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; }
+}
 @media print {
-  .sidebar { display: none; }
-  .main { margin: 0; padding: 0; }
+  .topbar, .toc { display: none; }
+  .layout { display: block; padding: 0; }
 }
 </style>
 </head>
 <body>
 
-<aside class="sidebar">
-  <a class="sidebar-logo" href="#top">
-    <div class="logo-mark">jg</div>
-    <div class="logo-text">Joe Garvin<span>Avoiding AI writing</span></div>
-  </a>
-
-  <div class="nav-section-label">Start here</div>
-  <a class="nav-link" href="#overview">Overview</a>
-  <a class="nav-link" href="#how-to-use">How to use this</a>
-
-  <div class="nav-section-label">Conceptual guide</div>
-  <a class="nav-link" href="#sounds-like-ai">What "sounds like AI" means</a>
-  <a class="nav-link" href="#vocabulary-tells">Vocabulary tells</a>
-  <a class="nav-link" href="#phrase-tells">Phrase tells</a>
-  <a class="nav-link" href="#structural-tells">Structural tells</a>
-  <a class="nav-link" href="#cognitive-tells">Cognitive &amp; epistemic tells</a>
-  <a class="nav-link" href="#detection">Detection science</a>
-  <a class="nav-link" href="#workflow">Editorial workflow</a>
-  <a class="nav-link" href="#traps">Over-polishing &amp; rewrite threshold</a>
-
-  <div class="nav-section-label">Word &amp; phrase list</div>
-  <a class="nav-link" href="#tier-1">Tier 1 — always replace</a>
-  <a class="nav-link" href="#tier-2">Tier 2 — flag in clusters</a>
-  <a class="nav-link" href="#tier-3">Tier 3 — flag by density</a>
-  <a class="nav-link" href="#phrases-cut">Phrases to cut</a>
-  <a class="nav-link" href="#top-50">The 50 most common phrases</a>
-  <a class="nav-link" href="#aidiolects">Per-model signatures</a>
-
-  <div class="nav-section-label">Tools &amp; resources</div>
-  <a class="nav-link" href="#skills">Agentic skills</a>
-  <a class="nav-link" href="#prompts">Custom prompts</a>
-  <a class="nav-link" href="#detectors">Detection tools</a>
-  <a class="nav-link" href="#humanizers">Humanizer tools</a>
-  <a class="nav-link" href="#reading">Reading list</a>
-  <a class="nav-link" href="#sources">Sources</a>
-
-  <div class="sidebar-version">
-    General resource · v1<br>
-    Compiled April 2026<br>
-    <a href="#top">↑ back to top</a>
-  </div>
-</aside>
-
+<a class="skip" href="#overview">Skip to content</a>
+<div class="topbar">
+  <a class="brand" href="https://joe-garvin.github.io/claude-workbench/">Joe Garvin <span>· Claude workbench</span></a>
+  <button class="theme-toggle" type="button" aria-label="Switch between light and dark theme">
+    <svg class="sun" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></svg>
+    <svg class="moon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
+  </button>
+</div>
+<div class="layout">
 <main class="main" id="top">
 <div class="inner">
 
-  <!-- HEADER -->
-  <header class="page-header">
-    <div class="page-header-eyebrow">For writers and editors</div>
-    <h1 class="page-header-title">Avoiding AI writing</h1>
-    <p class="page-header-desc">A working reference on what makes writing sound AI-generated, how detection works, and the techniques that actually remove the fingerprint. Read end-to-end once. Bookmark the word list.</p>
-    <div class="header-meta">
-      <div class="header-meta-item"><span class="header-meta-label">Version</span><span class="header-meta-value">v1</span></div>
-      <div class="header-meta-item"><span class="header-meta-label">Compiled</span><span class="header-meta-value">April 2026</span></div>
-      <div class="header-meta-item"><span class="header-meta-label">Audience</span><span class="header-meta-value">Writers &amp; editors</span></div>
-    </div>
-    <div class="toc-chips">
-      <a class="toc-chip" href="#vocabulary-tells">Vocabulary</a>
-      <a class="toc-chip" href="#phrase-tells">Phrases</a>
-      <a class="toc-chip" href="#structural-tells">Structure</a>
-      <a class="toc-chip" href="#detection">Detection</a>
-      <a class="toc-chip" href="#workflow">Editorial workflow</a>
-      <a class="toc-chip" href="#tier-1">Tier 1 list</a>
-      <a class="toc-chip" href="#top-50">Top 50 phrases</a>
-      <a class="toc-chip" href="#skills">Skills &amp; prompts</a>
-    </div>
+  <header class="intro">
+    <h1>Avoiding AI writing</h1>
+    <p class="lede">A working reference on what makes writing sound AI-generated, how detection works, and the techniques that remove the fingerprint. Read it end to end once. Bookmark the word list.</p>
+    <p class="meta">For writers and editors. Version 1, compiled April 2026. It covers 109 flagged words in three tiers, the 50 most common AI phrases, and a nine-pass editorial workflow.</p>
   </header>
 
   <!-- OVERVIEW -->
   <section class="section" id="overview">
-    <div class="section-eyebrow">Start here</div>
     <h2 class="section-title">Overview</h2>
     <p class="section-desc">Three documents in one page. Read the conceptual guide once to understand the patterns. Use the word list while editing. Pull from the tools catalog when you want to wire a skill or prompt into your workflow.</p>
 
-    <div class="grid-3">
-      <div class="metric-card">
-        <div class="metric-label">Tiered word list</div>
-        <div class="metric-value">109</div>
-        <div class="metric-sub">flagged entries across Tier 1–3</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-label">Top AI phrases</div>
-        <div class="metric-value">50</div>
-        <div class="metric-sub">most common AI openers &amp; fillers</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-label">Editorial pass</div>
-        <div class="metric-value">9</div>
-        <div class="metric-sub">steps from raw draft to publishable</div>
-      </div>
-    </div>
-
-    <div style="margin-top:1.5rem;">
+    <div class="callouts">
       <div class="alert alert-coral">
-        <div class="alert-dot"></div>
         <div class="alert-body">
           <div class="alert-title">The counterintuitive finding</div>
-          AI writing patterns persist even after being rewritten, translated, or summarized by another LLM. Patterns are encoded at the word-distribution level. Running AI text through a humanizer tool, or asking a second AI to rephrase it, doesn't reliably remove the fingerprint. Remediation has to involve actual human intervention.
+          AI writing patterns persist even after being rewritten, translated, or summarized by another LLM. Patterns are encoded at the word-distribution level. Running AI text through a humanizer tool, or asking a second AI to rephrase it, doesn’t reliably remove the fingerprint. Remediation has to involve actual human intervention.
         </div>
       </div>
       <div class="alert alert-info">
-        <div class="alert-dot"></div>
         <div class="alert-body">
           <div class="alert-title">The most actionable structural finding</div>
           Pangram Labs (which trains classifiers on 28 million human documents) weights structural regularity <em>higher</em> than vocabulary. If you fix every flagged word but leave sentence length uniform and rhythm metronomic, the text still reads as AI-generated. The word list is necessary but not sufficient.
         </div>
       </div>
       <div class="alert alert-squid">
-        <div class="alert-dot"></div>
         <div class="alert-body">
           <div class="alert-title">If you do one thing today</div>
-          Install Will Francis's custom instruction prompt (<a href="#prompts">jump to it</a>) in your Claude settings. Suppressing patterns at generation is far less work than editing them out afterward.
+          Install Will Francis’s custom instruction prompt (<a href="#prompts">jump to it</a>) in your Claude settings. Suppressing patterns at generation is far less work than editing them out afterward.
         </div>
       </div>
     </div>
   </section>
 
-  <hr class="divider">
-
   <!-- HOW TO USE -->
   <section class="section" id="how-to-use">
-    <div class="section-eyebrow">Start here</div>
     <h2 class="section-title">How to use this resource</h2>
-    <p class="section-desc">A working document, not a manifesto. Read the way you'd read a reference book — in order once, then by section.</p>
+    <p class="section-desc">A working document, not a manifesto. Read the way you’d read a reference book — in order once, then by section.</p>
 
     <div class="grid-3">
       <div class="card">
@@ -542,7 +339,7 @@ ol.copy-list li::marker { color: var(--coral); font-weight: 600; }
       </div>
       <div class="card">
         <h3 class="subsection-h">Use it while editing</h3>
-        <p class="copy">The <a href="#tier-1">word and phrase list</a> is the operational reference. Open it while you edit. Search the page for any word you flagged and pick a replacement. Stop reading once you've replaced it.</p>
+        <p class="copy">The <a href="#tier-1">word and phrase list</a> is the operational reference. Open it while you edit. Search the page for any word you flagged and pick a replacement. Stop reading once you’ve replaced it.</p>
       </div>
       <div class="card">
         <h3 class="subsection-h">Wire it into your workflow</h3>
@@ -551,28 +348,22 @@ ol.copy-list li::marker { color: var(--coral); font-weight: 600; }
     </div>
   </section>
 
-  <hr class="divider">
-
   <!-- SOUNDS LIKE AI -->
   <section class="section" id="sounds-like-ai">
-    <div class="section-eyebrow">Conceptual guide</div>
-    <h2 class="section-title">What "sounds like AI" means</h2>
-    <p class="copy">A reader encounters a paragraph and something tells them — "AI wrote this" — before they can articulate why. That instinct is responding to a cluster of overlapping signals: vocabulary, rhythm, structure, and a certain epistemic cowardice that passes as thoroughness.</p>
-    <p class="copy">Language models are trained on the patterns of human writing and optimized to produce what is most expected next. That optimization produces text that is grammatically flawless, structurally tidy, and stylistically dead — the average of a billion documents rather than any individual's voice. It reads like the platonic corporate memo: complete, correct, and forgettable.</p>
+    <h2 class="section-title">What “sounds like AI” means</h2>
+    <p class="copy">A reader encounters a paragraph and something tells them — “AI wrote this” — before they can articulate why. That instinct is responding to a cluster of overlapping signals: vocabulary, rhythm, structure, and a certain epistemic cowardice that passes as thoroughness.</p>
+    <p class="copy">Language models are trained on the patterns of human writing and optimized to produce what is most expected next. That optimization produces text that is grammatically flawless, structurally tidy, and stylistically dead — the average of a billion documents rather than any individual’s voice. It reads like the platonic corporate memo: complete, correct, and forgettable.</p>
 
     <div class="pull-quote">
       The problem is that AI writes in very specific patterns that are invisible to the writer but obvious to everyone reading.
       <span class="attr">— Tom Orbach, Director of Growth Marketing, Google</span>
     </div>
 
-    <p class="copy">Most people trying to fix this ask AI to "add a personal touch." That misses the point. The problem is pattern, not tone.</p>
+    <p class="copy">Most people trying to fix this ask AI to “add a personal touch.” That misses the point. The problem is pattern, not tone.</p>
   </section>
-
-  <hr class="divider">
 
   <!-- VOCABULARY TELLS -->
   <section class="section" id="vocabulary-tells">
-    <div class="section-eyebrow">Conceptual guide · 1 of 4</div>
     <h2 class="section-title">Vocabulary tells</h2>
     <p class="section-desc">Mode-collapse vocabulary: a small rotation of words that feel authoritative but add nothing. These cluster in predictable groups.</p>
 
@@ -588,23 +379,23 @@ ol.copy-list li::marker { color: var(--coral); font-weight: 600; }
         <h4 class="minor-h">Filler verbs (copula avoidance)</h4>
         <p class="copy">serves as, features (as a verb), boasts, presents, encompasses, underpins, underscores</p>
       </div>
-      <p class="copy" style="margin-top:1rem;">These words are 5–20× more frequent in AI text than in human text. Max Planck Institute research found their usage has spiked over 50% in published writing since ChatGPT launched — including in human writing, as people unconsciously absorb AI's vocabulary.</p>
+      <p class="copy" style="margin-top:1rem;">These words are 5–20× more frequent in AI text than in human text. Max Planck Institute research found their usage has spiked over 50% in published writing since ChatGPT launched — including in human writing, as people unconsciously absorb AI’s vocabulary.</p>
     </div>
 
     <div class="subsection">
-      <div class="subsection-label">"Delve" — the canonical example</div>
-      <p class="copy">The word "delve" became the public symbol of AI writing in 2023–2024 because ChatGPT used it at extraordinary frequency. It's an academic-register word that sounds sophisticated while saying nothing specific: <em>let's delve into this topic</em>. By 2025, it had become so flagged that models started suppressing it. But the underlying impulse — reaching for the fanciest thesaurus synonym — persists.</p>
+      <div class="subsection-label">“Delve” — the canonical example</div>
+      <p class="copy">The word “delve” became the public symbol of AI writing in 2023–2024 because ChatGPT used it at extraordinary frequency. It’s an academic-register word that sounds sophisticated while saying nothing specific: <em>let’s delve into this topic</em>. By 2025, it had become so flagged that models started suppressing it. But the underlying impulse — reaching for the fanciest thesaurus synonym — persists.</p>
     </div>
 
     <div class="subsection">
       <div class="subsection-label">Aidiolects: per-model signatures</div>
-      <p class="copy">Research achieving 97.1% accuracy in identifying which AI wrote a given piece found that each model has a distinct vocabulary signature — what researchers call "aidiolects."</p>
+      <p class="copy">Research achieving 97.1% accuracy in identifying which AI wrote a given piece found that each model has a distinct vocabulary signature — what researchers call “aidiolects.”</p>
       <ul class="copy-list">
         <li><strong>ChatGPT</strong> favors <em>certainly, such as, overall, below is</em>.</li>
         <li><strong>Claude</strong> leans on <em>according to the text, based on, both, the text</em>.</li>
-        <li><strong>DeepSeek</strong> overuses <em>crucial, essentially, here's a breakdown</em>.</li>
+        <li><strong>DeepSeek</strong> overuses <em>crucial, essentially, here’s a breakdown</em>.</li>
       </ul>
-      <p class="copy">These signatures persist through rewriting, translation, and summarization by another LLM. Patterns are encoded at the word-distribution level. They don't wash out easily. Full table: <a href="#aidiolects">per-model signatures</a>.</p>
+      <p class="copy">These signatures persist through rewriting, translation, and summarization by another LLM. Patterns are encoded at the word-distribution level. They don’t wash out easily. Full table: <a href="#aidiolects">per-model signatures</a>.</p>
     </div>
 
     <div class="subsection">
@@ -624,22 +415,19 @@ ol.copy-list li::marker { color: var(--coral); font-weight: 600; }
     </div>
   </section>
 
-  <hr class="divider">
-
   <!-- PHRASE TELLS -->
   <section class="section" id="phrase-tells">
-    <div class="section-eyebrow">Conceptual guide · 2 of 4</div>
     <h2 class="section-title">Phrase-level tells</h2>
-    <p class="section-desc">Slot-fill phrases — constructions where almost any noun or adjective could go in the blank without changing the sentence. These are AI's signature.</p>
+    <p class="section-desc">Slot-fill phrases — constructions where almost any noun or adjective could go in the blank without changing the sentence. These are AI’s signature.</p>
 
     <div class="subsection">
       <div class="subsection-label">Formulaic openers</div>
       <p class="copy">AI defaults to scene-setting preambles that contextualize the topic grandly before saying anything. The canonical forms:</p>
       <ul class="copy-list">
-        <li>"In today's rapidly evolving digital landscape…"</li>
-        <li>"In an era where [X]…"</li>
-        <li>"In the realm of…"</li>
-        <li>"In today's digital age…"</li>
+        <li>“In today’s rapidly evolving digital landscape…”</li>
+        <li>“In an era where [X]…”</li>
+        <li>“In the realm of…”</li>
+        <li>“In today’s digital age…”</li>
       </ul>
       <p class="copy">Introductions are the highest-density location for AI phrases — they outpace conclusions by a large margin. This is how AI eases into a topic instead of starting with the point.</p>
     </div>
@@ -654,20 +442,20 @@ ol.copy-list li::marker { color: var(--coral); font-weight: 600; }
       <div class="do-dont">
         <div class="dont-box">
           <div class="dont-label">Filler transitions</div>
-          <p><em>Moreover, Furthermore, Additionally, In conclusion, In summary, It's worth noting that, Notably.</em></p>
+          <p><em>Moreover, Furthermore, Additionally, In conclusion, In summary, It’s worth noting that, Notably.</em></p>
           <p>These are essay-structure scaffolding, not connective tissue. They signal a paragraph is done rather than connecting it to the next.</p>
         </div>
         <div class="dont-box">
           <div class="dont-label">Confidence calibration</div>
           <p><em>Interestingly, Surprisingly, Importantly, Significantly, Certainly, Undoubtedly.</em></p>
-          <p>AI tells the reader how to feel about a fact rather than letting the fact speak. Density is the signal: one "notably" in 2,000 words is fine; three in 500 is AI emphasis-stacking.</p>
+          <p>AI tells the reader how to feel about a fact rather than letting the fact speak. Density is the signal: one “notably” in 2,000 words is fine; three in 500 is AI emphasis-stacking.</p>
         </div>
       </div>
     </div>
 
     <div class="subsection">
       <div class="subsection-label">The false-contrast structure</div>
-      <p class="copy">"It's not just X — it's Y." "This isn't about X, it's about Y." "No X. No Y. Just Z."</p>
+      <p class="copy">“It’s not just X — it’s Y.” “This isn’t about X, it’s about Y.” “No X. No Y. Just Z.”</p>
       <p class="copy">Will Francis calls these out specifically: they mimic the shape of insight without containing any. Cut on sight.</p>
     </div>
 
@@ -675,24 +463,21 @@ ol.copy-list li::marker { color: var(--coral); font-weight: 600; }
       <div class="subsection-label">False ranges &amp; template slot-fills</div>
       <ul class="copy-list">
         <li><strong>False ranges</strong> — pairing unrelated extremes to fake breadth: <em>from the Big Bang to dark matter</em>, <em>from ancient civilizations to modern startups</em>. Sweeping but empty.</li>
-        <li><strong>"Whether you're [X] or [Y]"</strong> — false breadth. Say "everyone."</li>
-        <li><strong>"A [adjective] step forward for [noun]"</strong> — empty praise template.</li>
-        <li><strong>"I recently had the pleasure of [verb]-ing"</strong> — LinkedIn review pattern.</li>
+        <li><strong>“Whether you’re [X] or [Y]”</strong> — false breadth. Say “everyone.”</li>
+        <li><strong>“A [adjective] step forward for [noun]”</strong> — empty praise template.</li>
+        <li><strong>“I recently had the pleasure of [verb]-ing”</strong> — LinkedIn review pattern.</li>
       </ul>
     </div>
   </section>
 
-  <hr class="divider">
-
   <!-- STRUCTURAL TELLS -->
   <section class="section" id="structural-tells">
-    <div class="section-eyebrow">Conceptual guide · 3 of 4</div>
     <h2 class="section-title">Structural tells</h2>
-    <p class="section-desc">Pangram Labs' finding: structural regularity outweighs vocabulary as a detection signal. Fix the words and leave the rhythm, and the text still reads as AI.</p>
+    <p class="section-desc">Pangram Labs’ finding: structural regularity outweighs vocabulary as a detection signal. Fix the words and leave the rhythm, and the text still reads as AI.</p>
 
     <div class="subsection">
       <div class="subsection-label">The intro–list–conclusion architecture</div>
-      <p class="copy">AI defaults to a predictable scaffold: broad contextual opening → enumerated points or bulleted list → summary conclusion that restates what was just said. As one analysis puts it, the structure <em>tells you what it's about to do, does it, then tells you what it just did</em>.</p>
+      <p class="copy">AI defaults to a predictable scaffold: broad contextual opening → enumerated points or bulleted list → summary conclusion that restates what was just said. As one analysis puts it, the structure <em>tells you what it’s about to do, does it, then tells you what it just did</em>.</p>
     </div>
 
     <div class="subsection">
@@ -714,31 +499,28 @@ ol.copy-list li::marker { color: var(--coral); font-weight: 600; }
       <div class="subsection-label">More structural patterns</div>
       <div class="card">
         <h4 class="minor-h">Formulaic challenges sections</h4>
-        <p class="copy">A "Challenges" section that begins <em>"Despite [positive word], [subject] faces challenges…"</em> and ends with vague optimism. Name the actual challenge and the actual response, or cut it.</p>
+        <p class="copy">A “Challenges” section that begins <em>“Despite [positive word], [subject] faces challenges…”</em> and ends with vague optimism. Name the actual challenge and the actual response, or cut it.</p>
         <h4 class="minor-h">Paragraph length uniformity</h4>
-        <p class="copy">AI produces paragraphs of nearly identical size. Human writing has natural variation: some paragraphs are one sentence; some run longer. If every paragraph is 3–5 sentences, it's a structural tell.</p>
+        <p class="copy">AI produces paragraphs of nearly identical size. Human writing has natural variation: some paragraphs are one sentence; some run longer. If every paragraph is 3–5 sentences, it’s a structural tell.</p>
         <h4 class="minor-h">Sentence length uniformity</h4>
         <p class="copy">The metronomic rhythm — most sentences 15–25 words — is a strong detector signal. Human writing mixes short punchy sentences (3–8 words) with longer flowing ones. Fragments work. Questions break the pattern.</p>
         <h4 class="minor-h">Excessive structure</h4>
         <p class="copy">More than three headings in under 300 words is almost always AI trying to look organized. <em>Overview, Key Points, Summary, Conclusion, Introduction</em> are default AI scaffolding — use headers that tell the reader something specific.</p>
         <h4 class="minor-h">Numbered list inflation</h4>
-        <p class="copy">"Three key takeaways," "Five things to know," "Here are the top seven" — AI defaults to numbered lists because they're structurally safe. Only use them when the content genuinely has that many discrete, parallel items.</p>
+        <p class="copy">“Three key takeaways,” “Five things to know,” “Here are the top seven” — AI defaults to numbered lists because they’re structurally safe. Only use them when the content genuinely has that many discrete, parallel items.</p>
       </div>
     </div>
   </section>
 
-  <hr class="divider">
-
   <!-- COGNITIVE TELLS -->
   <section class="section" id="cognitive-tells">
-    <div class="section-eyebrow">Conceptual guide · 4 of 4</div>
     <h2 class="section-title">Cognitive &amp; epistemic tells</h2>
-    <p class="section-desc">The hardest tells to fix because they're not patterns in the text — they're absences. What a piece doesn't say is often the strongest signal that no person wrote it.</p>
+    <p class="section-desc">The hardest tells to fix because they’re not patterns in the text — they’re absences. What a piece doesn’t say is often the strongest signal that no person wrote it.</p>
 
     <div class="grid-2">
       <div class="card">
         <h3 class="subsection-h">Epistemic cowardice</h3>
-        <p class="copy">AI presents multiple perspectives even when one is clearly stronger, creating text that is perpetually balanced to the point of meaninglessness. It hedges with <em>perhaps, could potentially, it's important to note that, to be clear, generally speaking</em>. A form of self-protection: the model avoids commitment to avoid being wrong.</p>
+        <p class="copy">AI presents multiple perspectives even when one is clearly stronger, creating text that is perpetually balanced to the point of meaninglessness. It hedges with <em>perhaps, could potentially, it’s important to note that, to be clear, generally speaking</em>. A form of self-protection: the model avoids commitment to avoid being wrong.</p>
       </div>
       <div class="card">
         <h3 class="subsection-h">Absence of genuine opinion</h3>
@@ -754,7 +536,7 @@ ol.copy-list li::marker { color: var(--coral); font-weight: 600; }
       </div>
       <div class="card">
         <h3 class="subsection-h">Novelty inflation</h3>
-        <p class="copy">AI treats established concepts as if the writer discovered them: <em>she introduced a term I hadn't heard before, a failure mode nobody's naming, the insight everyone's missing</em>. Both a credibility risk (the concept probably has a Wikipedia page) and a simulation of discovery.</p>
+        <p class="copy">AI treats established concepts as if the writer discovered them: <em>she introduced a term I hadn’t heard before, a failure mode nobody’s naming, the insight everyone’s missing</em>. Both a credibility risk (the concept probably has a Wikipedia page) and a simulation of discovery.</p>
       </div>
       <div class="card">
         <h3 class="subsection-h">Vague attributions</h3>
@@ -766,47 +548,43 @@ ol.copy-list li::marker { color: var(--coral); font-weight: 600; }
       </div>
       <div class="card">
         <h3 class="subsection-h">Reasoning-chain artifacts</h3>
-        <p class="copy">AI's chain-of-thought leaking into prose: <em>let me think step by step, breaking this down, step 1, working through this logically</em>. The reader doesn't need the scaffolding. State the conclusion, then the evidence.</p>
+        <p class="copy">AI’s chain-of-thought leaking into prose: <em>let me think step by step, breaking this down, step 1, working through this logically</em>. The reader doesn’t need the scaffolding. State the conclusion, then the evidence.</p>
       </div>
     </div>
 
     <div style="margin-top:0.75rem;">
       <div class="alert alert-info">
-        <div class="alert-dot"></div>
         <div class="alert-body">
           <div class="alert-title">Acknowledgment loops</div>
-          <em>You're asking about, The question of whether, To answer your question</em> — AI restating the prompt before answering. Just answer.
+          <em>You’re asking about, The question of whether, To answer your question</em> — AI restating the prompt before answering. Just answer.
         </div>
       </div>
     </div>
   </section>
 
-  <hr class="divider">
-
   <!-- DETECTION SCIENCE -->
   <section class="section" id="detection">
-    <div class="section-eyebrow">Conceptual guide</div>
     <h2 class="section-title">The detection science</h2>
     <p class="section-desc">AI detectors operate on two primary metrics. Understanding them is useful even if you never run a draft through one — they describe what makes text feel mechanical.</p>
 
     <div class="grid-2">
       <div class="card">
         <h3 class="subsection-h">Perplexity</h3>
-        <p class="copy">A measure of how predictable the text is — how well an AI can predict what word comes next. Low perplexity means high-probability words in expected positions. AI writes to minimize perplexity by construction. Human writers choose words for reasons a language model doesn't optimize for: memory, rhythm, specificity, humor, context only the writer has. Those choices register as perplexity spikes.</p>
-        <h4 class="minor-h">By GPTZero's public methodology</h4>
-        <p class="copy"><span class="mono">Human writing</span> averages ~80–100 perplexity units.<br><span class="mono">GPT-4 output</span> averages ~20–30.</p>
+        <p class="copy">A measure of how predictable the text is — how well an AI can predict what word comes next. Low perplexity means high-probability words in expected positions. AI writes to minimize perplexity by construction. Human writers choose words for reasons a language model doesn’t optimize for: memory, rhythm, specificity, humor, context only the writer has. Those choices register as perplexity spikes.</p>
+        <h4 class="minor-h">By GPTZero’s public methodology</h4>
+        <p class="copy"><strong>Human writing</strong> averages ~80–100 perplexity units.<br><strong>GPT-4 output</strong> averages ~20–30.</p>
       </div>
       <div class="card">
         <h3 class="subsection-h">Burstiness</h3>
         <p class="copy">Variation in sentence structure and length. Human writing has high burstiness — a mix of short, staccato sentences and long flowing ones. AI text is metronomic: it clusters around uniform sentence lengths and consistent rhythmic patterns, producing low burstiness scores.</p>
-        <h4 class="minor-h">GPTZero's burstiness scores</h4>
-        <p class="copy"><span class="mono">Humans</span> spread 0.6–1.2.<br><span class="mono">GPT output</span> clusters around 0.2–0.4.</p>
+        <h4 class="minor-h">GPTZero’s burstiness scores</h4>
+        <p class="copy"><strong>Humans</strong> spread 0.6–1.2.<br><strong>GPT output</strong> clusters around 0.2–0.4.</p>
       </div>
     </div>
 
     <div class="subsection" style="margin-top:1.5rem;">
       <div class="subsection-label">The detection limit</div>
-      <p class="copy">These metrics are increasingly circumventable by humanizer tools. Pangram Labs, which trains a classifier on 28 million human documents, argues that structural regularity is a more robust signal than vocabulary. Fixing the flagged words while leaving the rhythm untouched still reads as AI-generated. Detection tools' claimed accuracy rates (often 99%+) are disputed — independent testing typically shows 76–90% real-world accuracy, with false-positive rates that vary significantly.</p>
+      <p class="copy">These metrics are increasingly circumventable by humanizer tools. Pangram Labs, which trains a classifier on 28 million human documents, argues that structural regularity is a more robust signal than vocabulary. Fixing the flagged words while leaving the rhythm untouched still reads as AI-generated. Detection tools’ claimed accuracy rates (often 99%+) are disputed — independent testing typically shows 76–90% real-world accuracy, with false-positive rates that vary significantly.</p>
     </div>
 
     <div class="subsection">
@@ -815,17 +593,14 @@ ol.copy-list li::marker { color: var(--coral); font-weight: 600; }
     </div>
   </section>
 
-  <hr class="divider">
-
   <!-- WORKFLOW -->
   <section class="section" id="workflow">
-    <div class="section-eyebrow">Conceptual guide</div>
     <h2 class="section-title">Manual editorial workflow</h2>
-    <p class="section-desc">The gold-standard remediation: nine ordered passes from raw draft to publishable. The goal is not to fool a detector. It's to make the text sound like a specific person wrote it — individual vocabulary, genuine opinion, earned emotion, imperfect rhythm. Detection evasion is a byproduct.</p>
+    <p class="section-desc">The gold-standard remediation: nine ordered passes from raw draft to publishable. The goal is not to fool a detector. It’s to make the text sound like a specific person wrote it — individual vocabulary, genuine opinion, earned emotion, imperfect rhythm. Detection evasion is a byproduct.</p>
 
     <div class="workflow-list">
       <div class="workflow-step">
-        <h4>Never use AI's opener</h4>
+        <h4>Never use AI’s opener</h4>
         <p>Write the first 2–3 sentences yourself, in your own voice. The opening is the highest-density location for AI tells; this single move establishes voice and authority immediately.</p>
       </div>
       <div class="workflow-step">
@@ -834,7 +609,7 @@ ol.copy-list li::marker { color: var(--coral); font-weight: 600; }
       </div>
       <div class="workflow-step">
         <h4>Structural break</h4>
-        <p>Identify AI's default architecture (intro–list–conclusion) and break it. Lead with the point instead of building to it. Merge uniform paragraphs or split them. Convert bullet lists into prose where the content is actually sequential thinking, not a genuine list.</p>
+        <p>Identify AI’s default architecture (intro–list–conclusion) and break it. Lead with the point instead of building to it. Merge uniform paragraphs or split them. Convert bullet lists into prose where the content is actually sequential thinking, not a genuine list.</p>
       </div>
       <div class="workflow-step">
         <h4>Specificity injection</h4>
@@ -850,7 +625,7 @@ ol.copy-list li::marker { color: var(--coral); font-weight: 600; }
       </div>
       <div class="workflow-step">
         <h4>Expert quotes</h4>
-        <p>Weave in real expert quotes or sourced data — from HARO (relaunched 2025), LinkedIn, professional communities. <em>"Experts believe"</em> becomes <em>"Dr. Sarah Chen, in a 2024 interview with Nature, argued that…"</em></p>
+        <p>Weave in real expert quotes or sourced data — from HARO (relaunched 2025), LinkedIn, professional communities. <em>“Experts believe”</em> becomes <em>“Dr. Sarah Chen, in a 2024 interview with Nature, argued that…”</em></p>
       </div>
       <div class="workflow-step">
         <h4>Fact-check everything</h4>
@@ -858,43 +633,39 @@ ol.copy-list li::marker { color: var(--coral); font-weight: 600; }
       </div>
       <div class="workflow-step">
         <h4>Second pass</h4>
-        <p>Run the Contently checklist: cut filler (<em>in order to, as well as, in terms of</em>), cut padded verbs (<em>helps with, is aimed at, can be used to</em>), check for "lists of three" appearing in every section, check for forced rhythmic patterns like <em>"While X is true, Y is also important."</em></p>
+        <p>Run the Contently checklist: cut filler (<em>in order to, as well as, in terms of</em>), cut padded verbs (<em>helps with, is aimed at, can be used to</em>), check for “lists of three” appearing in every section, check for forced rhythmic patterns like <em>“While X is true, Y is also important.”</em></p>
       </div>
     </div>
 
     <div style="margin-top:1.5rem;">
       <div class="alert alert-coral">
-        <div class="alert-dot"></div>
         <div class="alert-body">
           <div class="alert-title">The read-aloud test</div>
-          If the text sounds like it could be read by text-to-speech without sounding weird, it's too uniform. Human writing has rhythm that resists robotic delivery — uneven sentence length, natural disfluency, idiosyncratic word choices, pacing that speeds up and slows down.
+          If the text sounds like it could be read by text-to-speech without sounding weird, it’s too uniform. Human writing has rhythm that resists robotic delivery — uneven sentence length, natural disfluency, idiosyncratic word choices, pacing that speeds up and slows down.
         </div>
       </div>
     </div>
 
     <div class="pull-quote" style="margin-top:1rem;">
-      I personally run every single thing I write through these rules before I publish. I refuse to let anything out the door that could make someone think "AI wrote this."
-      <span class="attr">— Tom Orbach's personal editorial standard</span>
+      I personally run every single thing I write through these rules before I publish. I refuse to let anything out the door that could make someone think “AI wrote this.”
+      <span class="attr">— Tom Orbach’s personal editorial standard</span>
     </div>
   </section>
 
-  <hr class="divider">
-
   <!-- TRAPS -->
   <section class="section" id="traps">
-    <div class="section-eyebrow">Conceptual guide</div>
     <h2 class="section-title">The over-polishing trap &amp; the rewrite threshold</h2>
     <p class="section-desc">Two failure modes at the editing stage. The first: editing so aggressively that the text starts to look AI-generated for the opposite reason. The second: trying to patch a draft that needed a rewrite.</p>
 
     <div class="grid-2">
       <div class="card">
         <h3 class="subsection-h">The over-polishing trap</h3>
-        <p class="copy">Applying every rule at maximum strictness can push human writing toward AI statistical profiles. Natural disfluency, idiosyncratic word choices, and uneven pacing are what keep text out of the "AI-generated" classification. Deliberately sanding away all irregularity in pursuit of clean prose creates the uniformity you're trying to avoid.</p>
-        <p class="copy"><em>"Don't sand away all personality in pursuit of clean prose. This skill should make writing sound more human, not less."</em> — avoid-ai-writing SKILL.md</p>
+        <p class="copy">Applying every rule at maximum strictness can push human writing toward AI statistical profiles. Natural disfluency, idiosyncratic word choices, and uneven pacing are what keep text out of the “AI-generated” classification. Deliberately sanding away all irregularity in pursuit of clean prose creates the uniformity you’re trying to avoid.</p>
+        <p class="copy"><em>“Don’t sand away all personality in pursuit of clean prose. This skill should make writing sound more human, not less.”</em> — avoid-ai-writing SKILL.md</p>
       </div>
       <div class="card">
         <h3 class="subsection-h">The rewrite-vs-patch threshold</h3>
-        <p class="copy">If a draft has any two of these — patching individual phrases won't fix it. The structure itself is AI-generated.</p>
+        <p class="copy">If a draft has any two of these — patching individual phrases won’t fix it. The structure itself is AI-generated.</p>
         <ul class="copy-list">
           <li>5+ flagged vocabulary hits across multiple Tier 1 categories</li>
           <li>3+ distinct structural pattern categories triggered</li>
@@ -905,18 +676,15 @@ ol.copy-list li::marker { color: var(--coral); font-weight: 600; }
     </div>
   </section>
 
-  <hr class="divider">
-
   <!-- ===================== WORD & PHRASE LIST ===================== -->
 
   <!-- TIER 1 -->
   <section class="section" id="tier-1">
-    <div class="section-eyebrow">Word &amp; phrase list</div>
-    <h2 class="section-title">Tier 1 — always replace</h2>
+    <h2 class="section-title">Tier 1, always replace</h2>
     <p class="section-desc">These words appear 5–20× more often in AI text than human text. Replace on sight, in any context. The tier system reduces false positives on words that are fine in isolation but suspicious in clusters.</p>
 
     <div class="tier-banner tier-1">
-      <span class="tier-num">TIER 1</span>
+      <span class="tier-num">Tier 1.</span>
       <span><strong>Always flag.</strong> Replace on sight. Below: 67 entries, alphabetical within thematic order.</span>
     </div>
 
@@ -924,90 +692,87 @@ ol.copy-list li::marker { color: var(--coral); font-weight: 600; }
       <table class="ds-table">
         <thead><tr><th style="width:42%;">Replace</th><th>With</th></tr></thead>
         <tbody>
-          <tr><td class="replace">delve / delve into</td><td class="with">explore, dig into, look at</td></tr>
-          <tr><td class="replace">landscape (metaphor)</td><td class="with">field, space, industry, world</td></tr>
-          <tr><td class="replace">tapestry</td><td class="with">(describe the actual complexity)</td></tr>
-          <tr><td class="replace">realm</td><td class="with">area, field, domain</td></tr>
-          <tr><td class="replace">paradigm</td><td class="with">model, approach, framework</td></tr>
-          <tr><td class="replace">embark</td><td class="with">start, begin</td></tr>
-          <tr><td class="replace">beacon</td><td class="with">(rewrite entirely)</td></tr>
-          <tr><td class="replace">testament to</td><td class="with">shows, proves, demonstrates</td></tr>
-          <tr><td class="replace">robust</td><td class="with">strong, reliable, solid</td></tr>
-          <tr><td class="replace">comprehensive</td><td class="with">thorough, complete, full</td></tr>
-          <tr><td class="replace">cutting-edge</td><td class="with">latest, newest, advanced</td></tr>
-          <tr><td class="replace">leverage (verb)</td><td class="with">use</td></tr>
-          <tr><td class="replace">pivotal</td><td class="with">important, key, critical</td></tr>
-          <tr><td class="replace">underscores</td><td class="with">highlights, shows</td></tr>
-          <tr><td class="replace">meticulous / meticulously</td><td class="with">careful, detailed, precise</td></tr>
-          <tr><td class="replace">seamless / seamlessly</td><td class="with">smooth, easy, without friction</td></tr>
-          <tr><td class="replace">game-changer / game-changing</td><td class="with">describe what specifically changed and why</td></tr>
-          <tr><td class="replace">hit differently / hits different</td><td class="with">(describe specifically, or cut)</td></tr>
-          <tr><td class="replace">utilize</td><td class="with">use</td></tr>
-          <tr><td class="replace">watershed moment</td><td class="with">turning point, shift (or describe what changed)</td></tr>
-          <tr><td class="replace">marking a pivotal moment</td><td class="with">(state what happened)</td></tr>
-          <tr><td class="replace">the future looks bright</td><td class="with">(cut — say something specific or nothing)</td></tr>
-          <tr><td class="replace">only time will tell</td><td class="with">(cut — say something specific or nothing)</td></tr>
-          <tr><td class="replace">nestled</td><td class="with">is located, sits, is in</td></tr>
-          <tr><td class="replace">vibrant</td><td class="with">(describe what makes it active, or cut)</td></tr>
-          <tr><td class="replace">thriving</td><td class="with">growing, active (or cite a number)</td></tr>
-          <tr><td class="replace">despite challenges… continues to thrive</td><td class="with">(name the challenge and the response, or cut)</td></tr>
-          <tr><td class="replace">showcasing</td><td class="with">showing, demonstrating (or cut the clause)</td></tr>
-          <tr><td class="replace">deep dive / dive into</td><td class="with">look at, examine, explore</td></tr>
-          <tr><td class="replace">unpack / unpacking</td><td class="with">explain, break down, walk through</td></tr>
-          <tr><td class="replace">bustling</td><td class="with">busy, active (or cite what makes it busy)</td></tr>
-          <tr><td class="replace">intricate / intricacies</td><td class="with">complex, detailed (or name the specific complexity)</td></tr>
-          <tr><td class="replace">complexities</td><td class="with">(name the actual complexities, or use "problems" / "details")</td></tr>
-          <tr><td class="replace">ever-evolving</td><td class="with">changing, growing (or describe how)</td></tr>
-          <tr><td class="replace">enduring</td><td class="with">lasting, long-running (or cite how long)</td></tr>
-          <tr><td class="replace">daunting</td><td class="with">hard, difficult, challenging</td></tr>
-          <tr><td class="replace">holistic / holistically</td><td class="with">complete, full, whole (or describe what's included)</td></tr>
-          <tr><td class="replace">actionable</td><td class="with">practical, useful, concrete</td></tr>
-          <tr><td class="replace">impactful</td><td class="with">effective, significant (or describe the impact)</td></tr>
-          <tr><td class="replace">learnings</td><td class="with">lessons, findings, takeaways</td></tr>
-          <tr><td class="replace">thought leader / thought leadership</td><td class="with">expert, authority (or describe their actual contribution)</td></tr>
-          <tr><td class="replace">best practices</td><td class="with">what works, proven methods, standard approach</td></tr>
-          <tr><td class="replace">at its core</td><td class="with">(cut — just state the thing)</td></tr>
-          <tr><td class="replace">synergy / synergies</td><td class="with">(describe the actual combined effect)</td></tr>
-          <tr><td class="replace">interplay</td><td class="with">relationship, connection, interaction</td></tr>
-          <tr><td class="replace">in order to</td><td class="with">to</td></tr>
-          <tr><td class="replace">due to the fact that</td><td class="with">because</td></tr>
-          <tr><td class="replace">serves as</td><td class="with">is</td></tr>
-          <tr><td class="replace">features (verb)</td><td class="with">has, includes</td></tr>
-          <tr><td class="replace">boasts</td><td class="with">has</td></tr>
-          <tr><td class="replace">presents (inflated)</td><td class="with">is, shows, gives</td></tr>
-          <tr><td class="replace">commence</td><td class="with">start, begin</td></tr>
-          <tr><td class="replace">ascertain</td><td class="with">find out, determine, learn</td></tr>
-          <tr><td class="replace">endeavor</td><td class="with">effort, attempt, try</td></tr>
-          <tr><td class="replace">keen (as intensifier)</td><td class="with">interested, eager (or just state the interest)</td></tr>
-          <tr><td class="replace">symphony (metaphor)</td><td class="with">(describe the actual coordination or combination)</td></tr>
-          <tr><td class="replace">embrace (metaphor)</td><td class="with">adopt, accept, use, switch to</td></tr>
-          <tr><td class="replace">groundbreaking</td><td class="with">(describe what's actually new)</td></tr>
-          <tr><td class="replace">transformative</td><td class="with">(describe what changed and how)</td></tr>
-          <tr><td class="replace">innovative / innovation</td><td class="with">(describe what's actually new)</td></tr>
-          <tr><td class="replace">foster</td><td class="with">encourage, support, build</td></tr>
-          <tr><td class="replace">nuanced (as empty praise)</td><td class="with">specific, subtle, detailed (or name the actual nuance)</td></tr>
-          <tr><td class="replace">multifaceted</td><td class="with">(describe the actual facets, or cut)</td></tr>
-          <tr><td class="replace">shed light on</td><td class="with">explain, clarify</td></tr>
-          <tr><td class="replace">pave the way</td><td class="with">lead to, enable, make possible</td></tr>
-          <tr><td class="replace">navigate (figurative)</td><td class="with">handle, work through, deal with</td></tr>
-          <tr><td class="replace">bolster</td><td class="with">support, strengthen</td></tr>
-          <tr><td class="replace">underscore</td><td class="with">show, highlight</td></tr>
-          <tr><td class="replace">harness</td><td class="with">use, take advantage of</td></tr>
+          <tr><td class="replace"><span class="hl">delve / delve into</span></td><td class="with">explore, dig into, look at</td></tr>
+          <tr><td class="replace"><span class="hl">landscape (metaphor)</span></td><td class="with">field, space, industry, world</td></tr>
+          <tr><td class="replace"><span class="hl">tapestry</span></td><td class="with">(describe the actual complexity)</td></tr>
+          <tr><td class="replace"><span class="hl">realm</span></td><td class="with">area, field, domain</td></tr>
+          <tr><td class="replace"><span class="hl">paradigm</span></td><td class="with">model, approach, framework</td></tr>
+          <tr><td class="replace"><span class="hl">embark</span></td><td class="with">start, begin</td></tr>
+          <tr><td class="replace"><span class="hl">beacon</span></td><td class="with">(rewrite entirely)</td></tr>
+          <tr><td class="replace"><span class="hl">testament to</span></td><td class="with">shows, proves, demonstrates</td></tr>
+          <tr><td class="replace"><span class="hl">robust</span></td><td class="with">strong, reliable, solid</td></tr>
+          <tr><td class="replace"><span class="hl">comprehensive</span></td><td class="with">thorough, complete, full</td></tr>
+          <tr><td class="replace"><span class="hl">cutting-edge</span></td><td class="with">latest, newest, advanced</td></tr>
+          <tr><td class="replace"><span class="hl">leverage (verb)</span></td><td class="with">use</td></tr>
+          <tr><td class="replace"><span class="hl">pivotal</span></td><td class="with">important, key, critical</td></tr>
+          <tr><td class="replace"><span class="hl">underscores</span></td><td class="with">highlights, shows</td></tr>
+          <tr><td class="replace"><span class="hl">meticulous / meticulously</span></td><td class="with">careful, detailed, precise</td></tr>
+          <tr><td class="replace"><span class="hl">seamless / seamlessly</span></td><td class="with">smooth, easy, without friction</td></tr>
+          <tr><td class="replace"><span class="hl">game-changer / game-changing</span></td><td class="with">describe what specifically changed and why</td></tr>
+          <tr><td class="replace"><span class="hl">hit differently / hits different</span></td><td class="with">(describe specifically, or cut)</td></tr>
+          <tr><td class="replace"><span class="hl">utilize</span></td><td class="with">use</td></tr>
+          <tr><td class="replace"><span class="hl">watershed moment</span></td><td class="with">turning point, shift (or describe what changed)</td></tr>
+          <tr><td class="replace"><span class="hl">marking a pivotal moment</span></td><td class="with">(state what happened)</td></tr>
+          <tr><td class="replace"><span class="hl">the future looks bright</span></td><td class="with">(cut — say something specific or nothing)</td></tr>
+          <tr><td class="replace"><span class="hl">only time will tell</span></td><td class="with">(cut — say something specific or nothing)</td></tr>
+          <tr><td class="replace"><span class="hl">nestled</span></td><td class="with">is located, sits, is in</td></tr>
+          <tr><td class="replace"><span class="hl">vibrant</span></td><td class="with">(describe what makes it active, or cut)</td></tr>
+          <tr><td class="replace"><span class="hl">thriving</span></td><td class="with">growing, active (or cite a number)</td></tr>
+          <tr><td class="replace"><span class="hl">despite challenges… continues to thrive</span></td><td class="with">(name the challenge and the response, or cut)</td></tr>
+          <tr><td class="replace"><span class="hl">showcasing</span></td><td class="with">showing, demonstrating (or cut the clause)</td></tr>
+          <tr><td class="replace"><span class="hl">deep dive / dive into</span></td><td class="with">look at, examine, explore</td></tr>
+          <tr><td class="replace"><span class="hl">unpack / unpacking</span></td><td class="with">explain, break down, walk through</td></tr>
+          <tr><td class="replace"><span class="hl">bustling</span></td><td class="with">busy, active (or cite what makes it busy)</td></tr>
+          <tr><td class="replace"><span class="hl">intricate / intricacies</span></td><td class="with">complex, detailed (or name the specific complexity)</td></tr>
+          <tr><td class="replace"><span class="hl">complexities</span></td><td class="with">(name the actual complexities, or use “problems” / “details”)</td></tr>
+          <tr><td class="replace"><span class="hl">ever-evolving</span></td><td class="with">changing, growing (or describe how)</td></tr>
+          <tr><td class="replace"><span class="hl">enduring</span></td><td class="with">lasting, long-running (or cite how long)</td></tr>
+          <tr><td class="replace"><span class="hl">daunting</span></td><td class="with">hard, difficult, challenging</td></tr>
+          <tr><td class="replace"><span class="hl">holistic / holistically</span></td><td class="with">complete, full, whole (or describe what’s included)</td></tr>
+          <tr><td class="replace"><span class="hl">actionable</span></td><td class="with">practical, useful, concrete</td></tr>
+          <tr><td class="replace"><span class="hl">impactful</span></td><td class="with">effective, significant (or describe the impact)</td></tr>
+          <tr><td class="replace"><span class="hl">learnings</span></td><td class="with">lessons, findings, takeaways</td></tr>
+          <tr><td class="replace"><span class="hl">thought leader / thought leadership</span></td><td class="with">expert, authority (or describe their actual contribution)</td></tr>
+          <tr><td class="replace"><span class="hl">best practices</span></td><td class="with">what works, proven methods, standard approach</td></tr>
+          <tr><td class="replace"><span class="hl">at its core</span></td><td class="with">(cut — just state the thing)</td></tr>
+          <tr><td class="replace"><span class="hl">synergy / synergies</span></td><td class="with">(describe the actual combined effect)</td></tr>
+          <tr><td class="replace"><span class="hl">interplay</span></td><td class="with">relationship, connection, interaction</td></tr>
+          <tr><td class="replace"><span class="hl">in order to</span></td><td class="with">to</td></tr>
+          <tr><td class="replace"><span class="hl">due to the fact that</span></td><td class="with">because</td></tr>
+          <tr><td class="replace"><span class="hl">serves as</span></td><td class="with">is</td></tr>
+          <tr><td class="replace"><span class="hl">features (verb)</span></td><td class="with">has, includes</td></tr>
+          <tr><td class="replace"><span class="hl">boasts</span></td><td class="with">has</td></tr>
+          <tr><td class="replace"><span class="hl">presents (inflated)</span></td><td class="with">is, shows, gives</td></tr>
+          <tr><td class="replace"><span class="hl">commence</span></td><td class="with">start, begin</td></tr>
+          <tr><td class="replace"><span class="hl">ascertain</span></td><td class="with">find out, determine, learn</td></tr>
+          <tr><td class="replace"><span class="hl">endeavor</span></td><td class="with">effort, attempt, try</td></tr>
+          <tr><td class="replace"><span class="hl">keen (as intensifier)</span></td><td class="with">interested, eager (or just state the interest)</td></tr>
+          <tr><td class="replace"><span class="hl">symphony (metaphor)</span></td><td class="with">(describe the actual coordination or combination)</td></tr>
+          <tr><td class="replace"><span class="hl">embrace (metaphor)</span></td><td class="with">adopt, accept, use, switch to</td></tr>
+          <tr><td class="replace"><span class="hl">groundbreaking</span></td><td class="with">(describe what’s actually new)</td></tr>
+          <tr><td class="replace"><span class="hl">transformative</span></td><td class="with">(describe what changed and how)</td></tr>
+          <tr><td class="replace"><span class="hl">innovative / innovation</span></td><td class="with">(describe what’s actually new)</td></tr>
+          <tr><td class="replace"><span class="hl">foster</span></td><td class="with">encourage, support, build</td></tr>
+          <tr><td class="replace"><span class="hl">nuanced (as empty praise)</span></td><td class="with">specific, subtle, detailed (or name the actual nuance)</td></tr>
+          <tr><td class="replace"><span class="hl">multifaceted</span></td><td class="with">(describe the actual facets, or cut)</td></tr>
+          <tr><td class="replace"><span class="hl">shed light on</span></td><td class="with">explain, clarify</td></tr>
+          <tr><td class="replace"><span class="hl">pave the way</span></td><td class="with">lead to, enable, make possible</td></tr>
+          <tr><td class="replace"><span class="hl">navigate (figurative)</span></td><td class="with">handle, work through, deal with</td></tr>
+          <tr><td class="replace"><span class="hl">bolster</span></td><td class="with">support, strengthen</td></tr>
+          <tr><td class="replace"><span class="hl">underscore</span></td><td class="with">show, highlight</td></tr>
+          <tr><td class="replace"><span class="hl">harness</span></td><td class="with">use, take advantage of</td></tr>
         </tbody>
       </table>
     </div>
   </section>
 
-  <hr class="divider">
-
   <!-- TIER 2 -->
   <section class="section" id="tier-2">
-    <div class="section-eyebrow">Word &amp; phrase list</div>
-    <h2 class="section-title">Tier 2 — flag in clusters</h2>
+    <h2 class="section-title">Tier 2, flag in clusters</h2>
     <p class="section-desc">Individually acceptable. When two or more appear in the same paragraph, the paragraph likely needs a rewrite.</p>
 
     <div class="tier-banner tier-2">
-      <span class="tier-num">TIER 2</span>
+      <span class="tier-num">Tier 2.</span>
       <span><strong>Flag in clusters.</strong> One is fine. Two in a paragraph is a signal. Three is a rewrite.</span>
     </div>
 
@@ -1015,100 +780,94 @@ ol.copy-list li::marker { color: var(--coral); font-weight: 600; }
       <table class="ds-table">
         <thead><tr><th style="width:42%;">Replace</th><th>With</th></tr></thead>
         <tbody>
-          <tr><td class="replace">harness</td><td class="with">use, take advantage of</td></tr>
-          <tr><td class="replace">navigate / navigating</td><td class="with">work through, handle, deal with</td></tr>
-          <tr><td class="replace">elevate</td><td class="with">improve, raise, strengthen</td></tr>
-          <tr><td class="replace">unleash</td><td class="with">release, enable, unlock</td></tr>
-          <tr><td class="replace">streamline</td><td class="with">simplify, speed up</td></tr>
-          <tr><td class="replace">empower</td><td class="with">enable, let, allow</td></tr>
-          <tr><td class="replace">spearhead</td><td class="with">lead, drive, run</td></tr>
-          <tr><td class="replace">resonate / resonates with</td><td class="with">connect with, appeal to, matter to</td></tr>
-          <tr><td class="replace">revolutionize</td><td class="with">change, transform, reshape (or describe what changed)</td></tr>
-          <tr><td class="replace">facilitate / facilitates</td><td class="with">enable, help, allow, run</td></tr>
-          <tr><td class="replace">underpin</td><td class="with">support, form the basis of</td></tr>
-          <tr><td class="replace">nuanced</td><td class="with">specific, subtle, detailed (or name the actual nuance)</td></tr>
-          <tr><td class="replace">crucial</td><td class="with">important, key, necessary</td></tr>
-          <tr><td class="replace">ecosystem (metaphor)</td><td class="with">system, community, network, market</td></tr>
-          <tr><td class="replace">myriad</td><td class="with">many, numerous (or give a number)</td></tr>
-          <tr><td class="replace">plethora</td><td class="with">many, a lot of (or give a number)</td></tr>
-          <tr><td class="replace">encompass</td><td class="with">include, cover, span</td></tr>
-          <tr><td class="replace">catalyze</td><td class="with">start, trigger, accelerate</td></tr>
-          <tr><td class="replace">reimagine</td><td class="with">rethink, redesign, rebuild</td></tr>
-          <tr><td class="replace">galvanize</td><td class="with">motivate, rally, push</td></tr>
-          <tr><td class="replace">augment</td><td class="with">add to, expand, supplement</td></tr>
-          <tr><td class="replace">cultivate</td><td class="with">build, develop, grow</td></tr>
-          <tr><td class="replace">illuminate</td><td class="with">clarify, explain, show</td></tr>
-          <tr><td class="replace">elucidate</td><td class="with">explain, clarify, spell out</td></tr>
-          <tr><td class="replace">juxtapose</td><td class="with">compare, contrast, set side by side</td></tr>
-          <tr><td class="replace">paradigm-shifting</td><td class="with">(describe what actually shifted)</td></tr>
-          <tr><td class="replace">cornerstone</td><td class="with">foundation, basis, key part</td></tr>
-          <tr><td class="replace">paramount</td><td class="with">most important, top priority</td></tr>
-          <tr><td class="replace">poised (to)</td><td class="with">ready, set, about to</td></tr>
-          <tr><td class="replace">burgeoning</td><td class="with">growing, emerging (or cite a number)</td></tr>
-          <tr><td class="replace">nascent</td><td class="with">new, early-stage, emerging</td></tr>
-          <tr><td class="replace">quintessential</td><td class="with">typical, classic, defining</td></tr>
-          <tr><td class="replace">overarching</td><td class="with">main, central, broad</td></tr>
-          <tr><td class="replace">underpinning / underpinnings</td><td class="with">basis, foundation, what supports</td></tr>
+          <tr><td class="replace"><span class="hl">harness</span></td><td class="with">use, take advantage of</td></tr>
+          <tr><td class="replace"><span class="hl">navigate / navigating</span></td><td class="with">work through, handle, deal with</td></tr>
+          <tr><td class="replace"><span class="hl">elevate</span></td><td class="with">improve, raise, strengthen</td></tr>
+          <tr><td class="replace"><span class="hl">unleash</span></td><td class="with">release, enable, unlock</td></tr>
+          <tr><td class="replace"><span class="hl">streamline</span></td><td class="with">simplify, speed up</td></tr>
+          <tr><td class="replace"><span class="hl">empower</span></td><td class="with">enable, let, allow</td></tr>
+          <tr><td class="replace"><span class="hl">spearhead</span></td><td class="with">lead, drive, run</td></tr>
+          <tr><td class="replace"><span class="hl">resonate / resonates with</span></td><td class="with">connect with, appeal to, matter to</td></tr>
+          <tr><td class="replace"><span class="hl">revolutionize</span></td><td class="with">change, transform, reshape (or describe what changed)</td></tr>
+          <tr><td class="replace"><span class="hl">facilitate / facilitates</span></td><td class="with">enable, help, allow, run</td></tr>
+          <tr><td class="replace"><span class="hl">underpin</span></td><td class="with">support, form the basis of</td></tr>
+          <tr><td class="replace"><span class="hl">nuanced</span></td><td class="with">specific, subtle, detailed (or name the actual nuance)</td></tr>
+          <tr><td class="replace"><span class="hl">crucial</span></td><td class="with">important, key, necessary</td></tr>
+          <tr><td class="replace"><span class="hl">ecosystem (metaphor)</span></td><td class="with">system, community, network, market</td></tr>
+          <tr><td class="replace"><span class="hl">myriad</span></td><td class="with">many, numerous (or give a number)</td></tr>
+          <tr><td class="replace"><span class="hl">plethora</span></td><td class="with">many, a lot of (or give a number)</td></tr>
+          <tr><td class="replace"><span class="hl">encompass</span></td><td class="with">include, cover, span</td></tr>
+          <tr><td class="replace"><span class="hl">catalyze</span></td><td class="with">start, trigger, accelerate</td></tr>
+          <tr><td class="replace"><span class="hl">reimagine</span></td><td class="with">rethink, redesign, rebuild</td></tr>
+          <tr><td class="replace"><span class="hl">galvanize</span></td><td class="with">motivate, rally, push</td></tr>
+          <tr><td class="replace"><span class="hl">augment</span></td><td class="with">add to, expand, supplement</td></tr>
+          <tr><td class="replace"><span class="hl">cultivate</span></td><td class="with">build, develop, grow</td></tr>
+          <tr><td class="replace"><span class="hl">illuminate</span></td><td class="with">clarify, explain, show</td></tr>
+          <tr><td class="replace"><span class="hl">elucidate</span></td><td class="with">explain, clarify, spell out</td></tr>
+          <tr><td class="replace"><span class="hl">juxtapose</span></td><td class="with">compare, contrast, set side by side</td></tr>
+          <tr><td class="replace"><span class="hl">paradigm-shifting</span></td><td class="with">(describe what actually shifted)</td></tr>
+          <tr><td class="replace"><span class="hl">cornerstone</span></td><td class="with">foundation, basis, key part</td></tr>
+          <tr><td class="replace"><span class="hl">paramount</span></td><td class="with">most important, top priority</td></tr>
+          <tr><td class="replace"><span class="hl">poised (to)</span></td><td class="with">ready, set, about to</td></tr>
+          <tr><td class="replace"><span class="hl">burgeoning</span></td><td class="with">growing, emerging (or cite a number)</td></tr>
+          <tr><td class="replace"><span class="hl">nascent</span></td><td class="with">new, early-stage, emerging</td></tr>
+          <tr><td class="replace"><span class="hl">quintessential</span></td><td class="with">typical, classic, defining</td></tr>
+          <tr><td class="replace"><span class="hl">overarching</span></td><td class="with">main, central, broad</td></tr>
+          <tr><td class="replace"><span class="hl">underpinning / underpinnings</span></td><td class="with">basis, foundation, what supports</td></tr>
         </tbody>
       </table>
     </div>
   </section>
 
-  <hr class="divider">
-
   <!-- TIER 3 -->
   <section class="section" id="tier-3">
-    <div class="section-eyebrow">Word &amp; phrase list</div>
-    <h2 class="section-title">Tier 3 — flag by density</h2>
+    <h2 class="section-title">Tier 3, flag by density</h2>
     <p class="section-desc">Normal words. Flag only when the text is saturated with them — a sign AI filled space with vague praise instead of specifics. Replace some instances with numbers, comparisons, or examples.</p>
 
     <div class="tier-banner tier-3">
-      <span class="tier-num">TIER 3</span>
-      <span><strong>Flag at high density (~3%+).</strong> Routine words AI overuses. Don't blanket-replace — replace enough to add specificity.</span>
+      <span class="tier-num">Tier 3.</span>
+      <span><strong>Flag at high density (~3%+).</strong> Routine words AI overuses. Don’t blanket-replace — replace enough to add specificity.</span>
     </div>
 
     <div class="card">
       <table class="ds-table">
         <thead><tr><th style="width:34%;">Word</th><th>Fix</th></tr></thead>
         <tbody>
-          <tr><td class="replace">significant / significantly</td><td class="with">Replace some with specifics: numbers, comparisons, examples</td></tr>
-          <tr><td class="replace">innovative / innovation</td><td class="with">Describe what's actually new</td></tr>
-          <tr><td class="replace">effective / effectively</td><td class="with">Say how or cite a metric</td></tr>
-          <tr><td class="replace">dynamic / dynamics</td><td class="with">Name the actual forces or changes</td></tr>
-          <tr><td class="replace">scalable / scalability</td><td class="with">Describe what scales and to what</td></tr>
-          <tr><td class="replace">compelling</td><td class="with">Say why it compels</td></tr>
-          <tr><td class="replace">unprecedented</td><td class="with">Name the precedent it breaks (or cut)</td></tr>
-          <tr><td class="replace">exceptional / exceptionally</td><td class="with">Cite what makes it an exception</td></tr>
-          <tr><td class="replace">remarkable / remarkably</td><td class="with">Say what's worth remarking on</td></tr>
-          <tr><td class="replace">sophisticated</td><td class="with">Describe the sophistication</td></tr>
-          <tr><td class="replace">instrumental</td><td class="with">Say what role it played</td></tr>
-          <tr><td class="replace">world-class / state-of-the-art / best-in-class</td><td class="with">Cite a benchmark or comparison</td></tr>
+          <tr><td class="replace"><span class="hl">significant / significantly</span></td><td class="with">Replace some with specifics: numbers, comparisons, examples</td></tr>
+          <tr><td class="replace"><span class="hl">innovative / innovation</span></td><td class="with">Describe what’s actually new</td></tr>
+          <tr><td class="replace"><span class="hl">effective / effectively</span></td><td class="with">Say how or cite a metric</td></tr>
+          <tr><td class="replace"><span class="hl">dynamic / dynamics</span></td><td class="with">Name the actual forces or changes</td></tr>
+          <tr><td class="replace"><span class="hl">scalable / scalability</span></td><td class="with">Describe what scales and to what</td></tr>
+          <tr><td class="replace"><span class="hl">compelling</span></td><td class="with">Say why it compels</td></tr>
+          <tr><td class="replace"><span class="hl">unprecedented</span></td><td class="with">Name the precedent it breaks (or cut)</td></tr>
+          <tr><td class="replace"><span class="hl">exceptional / exceptionally</span></td><td class="with">Cite what makes it an exception</td></tr>
+          <tr><td class="replace"><span class="hl">remarkable / remarkably</span></td><td class="with">Say what’s worth remarking on</td></tr>
+          <tr><td class="replace"><span class="hl">sophisticated</span></td><td class="with">Describe the sophistication</td></tr>
+          <tr><td class="replace"><span class="hl">instrumental</span></td><td class="with">Say what role it played</td></tr>
+          <tr><td class="replace"><span class="hl">world-class / state-of-the-art / best-in-class</span></td><td class="with">Cite a benchmark or comparison</td></tr>
         </tbody>
       </table>
     </div>
   </section>
 
-  <hr class="divider">
-
   <!-- PHRASES TO CUT -->
   <section class="section" id="phrases-cut">
-    <div class="section-eyebrow">Word &amp; phrase list</div>
     <h2 class="section-title">Phrases to cut entirely</h2>
-    <p class="section-desc">Slot-fill constructions that signal generated text. If a phrase has a blank where any noun or adjective could go and still sound the same, it's too generic.</p>
+    <p class="section-desc">Slot-fill constructions that signal generated text. If a phrase has a blank where any noun or adjective could go and still sound the same, it’s too generic.</p>
 
     <div class="subsection">
       <div class="subsection-label"><span>Opener phrases</span><span class="label-aside">cut or rewrite</span></div>
       <div class="card">
         <div class="phrase-grid">
-          <div class="phrase-line"><span class="src">"In today's [fast-paced/digital] world…"</span><span class="arrow">→</span><span class="fix">start with the point</span></div>
-          <div class="phrase-line"><span class="src">"In an era where [X]…"</span><span class="arrow">→</span><span class="fix">cut or state specific context</span></div>
-          <div class="phrase-line"><span class="src">"In the realm of…"</span><span class="arrow">→</span><span class="fix">name the actual field</span></div>
-          <div class="phrase-line"><span class="src">"In the vast [X]…"</span><span class="arrow">→</span><span class="fix">cut the preamble</span></div>
-          <div class="phrase-line"><span class="src">"In the annals of…"</span><span class="arrow">→</span><span class="fix">state the historical claim directly</span></div>
-          <div class="phrase-line"><span class="src">"Join us as we…"</span><span class="arrow">→</span><span class="fix">just start</span></div>
-          <div class="phrase-line"><span class="src">"Let's explore / deep dive / break this down"</span><span class="arrow">→</span><span class="fix">just start</span></div>
-          <div class="phrase-line"><span class="src">"In this article, we will explore…"</span><span class="arrow">→</span><span class="fix">cut; start with the content</span></div>
-          <div class="phrase-line"><span class="src">"At its core, this is about…"</span><span class="arrow">→</span><span class="fix">cut "at its core"</span></div>
+          <div class="phrase-line"><span class="src">“In today’s [fast-paced/digital] world…”</span><span class="arrow">→</span><span class="fix">start with the point</span></div>
+          <div class="phrase-line"><span class="src">“In an era where [X]…”</span><span class="arrow">→</span><span class="fix">cut or state specific context</span></div>
+          <div class="phrase-line"><span class="src">“In the realm of…”</span><span class="arrow">→</span><span class="fix">name the actual field</span></div>
+          <div class="phrase-line"><span class="src">“In the vast [X]…”</span><span class="arrow">→</span><span class="fix">cut the preamble</span></div>
+          <div class="phrase-line"><span class="src">“In the annals of…”</span><span class="arrow">→</span><span class="fix">state the historical claim directly</span></div>
+          <div class="phrase-line"><span class="src">“Join us as we…”</span><span class="arrow">→</span><span class="fix">just start</span></div>
+          <div class="phrase-line"><span class="src">“Let’s explore / deep dive / break this down”</span><span class="arrow">→</span><span class="fix">just start</span></div>
+          <div class="phrase-line"><span class="src">“In this article, we will explore…”</span><span class="arrow">→</span><span class="fix">cut; start with the content</span></div>
+          <div class="phrase-line"><span class="src">“At its core, this is about…”</span><span class="arrow">→</span><span class="fix">cut “at its core”</span></div>
         </div>
       </div>
     </div>
@@ -1117,16 +876,16 @@ ol.copy-list li::marker { color: var(--coral); font-weight: 600; }
       <div class="subsection-label"><span>Significance inflation</span><span class="label-aside">cut or replace with specifics</span></div>
       <div class="card">
         <div class="phrase-grid">
-          <div class="phrase-line"><span class="src">"A testament to…"</span><span class="arrow">→</span><span class="fix">shows, proves, demonstrates</span></div>
-          <div class="phrase-line"><span class="src">"Cannot be overstated"</span><span class="arrow">→</span><span class="fix">state it once, clearly</span></div>
-          <div class="phrase-line"><span class="src">"Profound impact"</span><span class="arrow">→</span><span class="fix">name the actual impact</span></div>
-          <div class="phrase-line"><span class="src">"Plays a crucial role"</span><span class="arrow">→</span><span class="fix">say what the role is</span></div>
-          <div class="phrase-line"><span class="src">"Has emerged as a…"</span><span class="arrow">→</span><span class="fix">describe what it is now</span></div>
-          <div class="phrase-line"><span class="src">"Has revolutionized…"</span><span class="arrow">→</span><span class="fix">describe what changed</span></div>
-          <div class="phrase-line"><span class="src">"A tapestry of…"</span><span class="arrow">→</span><span class="fix">describe the actual complexity</span></div>
-          <div class="phrase-line"><span class="src">"A treasure trove of…"</span><span class="arrow">→</span><span class="fix">say what's there</span></div>
-          <div class="phrase-line"><span class="src">"Stands as a beacon of…"</span><span class="arrow">→</span><span class="fix">rewrite entirely</span></div>
-          <div class="phrase-line"><span class="src">"Left an indelible mark"</span><span class="arrow">→</span><span class="fix">say what the mark is</span></div>
+          <div class="phrase-line"><span class="src">“A testament to…”</span><span class="arrow">→</span><span class="fix">shows, proves, demonstrates</span></div>
+          <div class="phrase-line"><span class="src">“Cannot be overstated”</span><span class="arrow">→</span><span class="fix">state it once, clearly</span></div>
+          <div class="phrase-line"><span class="src">“Profound impact”</span><span class="arrow">→</span><span class="fix">name the actual impact</span></div>
+          <div class="phrase-line"><span class="src">“Plays a crucial role”</span><span class="arrow">→</span><span class="fix">say what the role is</span></div>
+          <div class="phrase-line"><span class="src">“Has emerged as a…”</span><span class="arrow">→</span><span class="fix">describe what it is now</span></div>
+          <div class="phrase-line"><span class="src">“Has revolutionized…”</span><span class="arrow">→</span><span class="fix">describe what changed</span></div>
+          <div class="phrase-line"><span class="src">“A tapestry of…”</span><span class="arrow">→</span><span class="fix">describe the actual complexity</span></div>
+          <div class="phrase-line"><span class="src">“A treasure trove of…”</span><span class="arrow">→</span><span class="fix">say what’s there</span></div>
+          <div class="phrase-line"><span class="src">“Stands as a beacon of…”</span><span class="arrow">→</span><span class="fix">rewrite entirely</span></div>
+          <div class="phrase-line"><span class="src">“Left an indelible mark”</span><span class="arrow">→</span><span class="fix">say what the mark is</span></div>
         </div>
       </div>
     </div>
@@ -1135,14 +894,14 @@ ol.copy-list li::marker { color: var(--coral); font-weight: 600; }
       <div class="subsection-label"><span>Structural &amp; transitional filler</span><span class="label-aside">cut or use a connecting word</span></div>
       <div class="card">
         <div class="phrase-grid">
-          <div class="phrase-line"><span class="src">"Moreover / Furthermore / Additionally"</span><span class="arrow">→</span><span class="fix">restructure, or use "and," "also"</span></div>
-          <div class="phrase-line"><span class="src">"In conclusion / In summary"</span><span class="arrow">→</span><span class="fix">conclusion should be obvious</span></div>
-          <div class="phrase-line"><span class="src">"It's worth noting that / Notably"</span><span class="arrow">→</span><span class="fix">just state the fact</span></div>
-          <div class="phrase-line"><span class="src">"That said / That being said"</span><span class="arrow">→</span><span class="fix">"but," "yet," "however"</span></div>
-          <div class="phrase-line"><span class="src">"When it comes to…"</span><span class="arrow">→</span><span class="fix">just talk about the thing</span></div>
-          <div class="phrase-line"><span class="src">"At the end of the day"</span><span class="arrow">→</span><span class="fix">cut</span></div>
-          <div class="phrase-line"><span class="src">"Here's what's interesting…"</span><span class="arrow">→</span><span class="fix">let content signal importance</span></div>
-          <div class="phrase-line"><span class="src">"Now let's turn to / Let's now examine"</span><span class="arrow">→</span><span class="fix">no signposting</span></div>
+          <div class="phrase-line"><span class="src">“Moreover / Furthermore / Additionally”</span><span class="arrow">→</span><span class="fix">restructure, or use “and,” “also”</span></div>
+          <div class="phrase-line"><span class="src">“In conclusion / In summary”</span><span class="arrow">→</span><span class="fix">conclusion should be obvious</span></div>
+          <div class="phrase-line"><span class="src">“It’s worth noting that / Notably”</span><span class="arrow">→</span><span class="fix">just state the fact</span></div>
+          <div class="phrase-line"><span class="src">“That said / That being said”</span><span class="arrow">→</span><span class="fix">“but,” “yet,” “however”</span></div>
+          <div class="phrase-line"><span class="src">“When it comes to…”</span><span class="arrow">→</span><span class="fix">just talk about the thing</span></div>
+          <div class="phrase-line"><span class="src">“At the end of the day”</span><span class="arrow">→</span><span class="fix">cut</span></div>
+          <div class="phrase-line"><span class="src">“Here’s what’s interesting…”</span><span class="arrow">→</span><span class="fix">let content signal importance</span></div>
+          <div class="phrase-line"><span class="src">“Now let’s turn to / Let’s now examine”</span><span class="arrow">→</span><span class="fix">no signposting</span></div>
         </div>
       </div>
     </div>
@@ -1150,14 +909,14 @@ ol.copy-list li::marker { color: var(--coral); font-weight: 600; }
     <div class="subsection">
       <div class="subsection-label"><span>Confidence calibration to remove</span><span class="label-aside">let the fact speak</span></div>
       <div class="card">
-        <p class="copy" style="margin-bottom:0;"><em>Interestingly · Surprisingly · Importantly · Significantly · Notably · Certainly · Undoubtedly · It's important to note that · Needless to say · Of course (as filler).</em></p>
+        <p class="copy" style="margin-bottom:0;"><em>Interestingly · Surprisingly · Importantly · Significantly · Notably · Certainly · Undoubtedly · It’s important to note that · Needless to say · Of course (as filler).</em></p>
       </div>
     </div>
 
     <div class="subsection">
       <div class="subsection-label"><span>Chatbot artifacts</span><span class="label-aside">remove entirely</span></div>
       <div class="card">
-        <p class="copy" style="margin-bottom:0;"><em>"I hope this helps!" · "Certainly!" / "Absolutely!" / "Great question!" / "Excellent point!" · "Feel free to reach out" · "Let me know if you need anything else" · "You're asking about…" / "To answer your question…"</em></p>
+        <p class="copy" style="margin-bottom:0;"><em>“I hope this helps!” · “Certainly!” / “Absolutely!” / “Great question!” / “Excellent point!” · “Feel free to reach out” · “Let me know if you need anything else” · “You’re asking about…” / “To answer your question…”</em></p>
       </div>
     </div>
 
@@ -1179,34 +938,31 @@ ol.copy-list li::marker { color: var(--coral); font-weight: 600; }
       <div class="subsection-label"><span>Promotional language</span><span class="label-aside">replace with plain description</span></div>
       <div class="card">
         <div class="phrase-grid">
-          <div class="phrase-line"><span class="src">"Nestled within the breathtaking…"</span><span class="arrow">→</span><span class="fix">"is in"</span></div>
-          <div class="phrase-line"><span class="src">"A vibrant hub of innovation"</span><span class="arrow">→</span><span class="fix">describe what makes it active</span></div>
-          <div class="phrase-line"><span class="src">"A thriving ecosystem"</span><span class="arrow">→</span><span class="fix">describe the community, cite a number</span></div>
+          <div class="phrase-line"><span class="src">“Nestled within the breathtaking…”</span><span class="arrow">→</span><span class="fix">“is in”</span></div>
+          <div class="phrase-line"><span class="src">“A vibrant hub of innovation”</span><span class="arrow">→</span><span class="fix">describe what makes it active</span></div>
+          <div class="phrase-line"><span class="src">“A thriving ecosystem”</span><span class="arrow">→</span><span class="fix">describe the community, cite a number</span></div>
         </div>
       </div>
     </div>
   </section>
 
-  <hr class="divider">
-
   <!-- TOP 50 -->
   <section class="section" id="top-50">
-    <div class="section-eyebrow">Word &amp; phrase list</div>
     <h2 class="section-title">The 50 most common AI phrases</h2>
-    <p class="section-desc">Listed in order from most to least common (via aiphrasefinder.com). Useful for recognition — if you read it and your brain says "this sounds like AI," it's probably on this list.</p>
+    <p class="section-desc">Listed in order from most to least common (via aiphrasefinder.com). Useful for recognition — if you read it and your brain says “this sounds like AI,” it’s probably on this list.</p>
 
     <div class="card">
       <ol class="copy-list" style="columns: 2; column-gap: 2.5rem; padding-left: 1.6em;">
         <li>In the realm of</li>
         <li>Delve into</li>
-        <li>In today's digital age</li>
+        <li>In today’s digital age</li>
         <li>A testament to</li>
         <li>In conclusion</li>
         <li>A treasure trove of</li>
         <li>In this article</li>
         <li>A tapestry of</li>
         <li>In the annals of</li>
-        <li>Let's explore</li>
+        <li>Let’s explore</li>
         <li>The core elements of</li>
         <li>Ever-evolving</li>
         <li>Significantly enhance</li>
@@ -1218,7 +974,7 @@ ol.copy-list li::marker { color: var(--coral); font-weight: 600; }
         <li>Remember that</li>
         <li>An ongoing process</li>
         <li>In an era where</li>
-        <li>Let's deep dive</li>
+        <li>Let’s deep dive</li>
         <li>Ever-competitive</li>
         <li>Has revolutionized</li>
         <li>Evokes a sense of</li>
@@ -1251,11 +1007,8 @@ ol.copy-list li::marker { color: var(--coral); font-weight: 600; }
     </div>
   </section>
 
-  <hr class="divider">
-
   <!-- AIDIOLECTS -->
   <section class="section" id="aidiolects">
-    <div class="section-eyebrow">Word &amp; phrase list</div>
     <h2 class="section-title">Per-model vocabulary signatures</h2>
     <p class="section-desc">From the February 2025 arxiv study achieving 97.1% classification accuracy. Each model has a distinct vocabulary fingerprint that persists through rewriting.</p>
 
@@ -1264,7 +1017,7 @@ ol.copy-list li::marker { color: var(--coral); font-weight: 600; }
       <div class="model-row"><div class="model-name">Claude</div><div class="model-words">according to the text · based on · here is a summary · while · both · the text</div></div>
       <div class="model-row"><div class="model-name">Grok</div><div class="model-words">remember · might · but also · helps in · which · where</div></div>
       <div class="model-row"><div class="model-name">Gemini</div><div class="model-words">below · example · for instance · in summary · certainly! below</div></div>
-      <div class="model-row"><div class="model-name">DeepSeek</div><div class="model-words">crucial · key improvements · here's a breakdown · essentially · etc. · at the same time</div></div>
+      <div class="model-row"><div class="model-name">DeepSeek</div><div class="model-words">crucial · key improvements · here’s a breakdown · essentially · etc. · at the same time</div></div>
       <div class="model-row"><div class="model-name">Llama</div><div class="model-words">including · such as · the following · explanation the</div></div>
       <div class="model-row"><div class="model-name">Gemma</div><div class="model-words">let me · know if · remember · below is · specific · detailed</div></div>
       <div class="model-row"><div class="model-name">Qwen</div><div class="model-words">certainly · in summary · title · comprehensive · based · example use</div></div>
@@ -1272,18 +1025,15 @@ ol.copy-list li::marker { color: var(--coral); font-weight: 600; }
     </div>
   </section>
 
-  <hr class="divider">
-
   <!-- ===================== TOOLS ===================== -->
 
   <!-- SKILLS -->
   <section class="section" id="skills">
-    <div class="section-eyebrow">Tools &amp; resources</div>
     <h2 class="section-title">Agentic skills</h2>
     <p class="section-desc">Portable skill files you can install in Claude Code, Cursor, Codex, or similar agents to enforce these patterns at the agent layer.</p>
 
     <div class="grid-2">
-      <div class="tool-card">
+      <div class="tool-card featured">
         <span class="tag-row"><span class="badge badge-coral">Gold standard</span><span class="badge badge-squid">MIT</span></span>
         <div class="tool-name">avoid-ai-writing <span class="star">★</span></div>
         <div class="tool-meta">conorbronsdon · v3.3.1 · Portable SKILL.md</div>
@@ -1322,25 +1072,22 @@ ol.copy-list li::marker { color: var(--coral); font-weight: 600; }
         <h4 class="minor-h">Option 2 — reference in CLAUDE.md</h4>
 <pre class="code-block">- Editing for AI patterns → read `path/to/avoid-ai-writing/SKILL.md`</pre>
         <h4 class="minor-h">Option 3 — slash command</h4>
-        <p class="copy">Create <span class="mono">~/.claude/commands/clean-ai-writing.md</span>:</p>
+        <p class="copy">Create <code>~/.claude/commands/clean-ai-writing.md</code>:</p>
 <pre class="code-block">---
 description: Audit and rewrite content to remove AI writing patterns
 ---
 $ARGUMENTS
 Read and follow the instructions in ~/.claude/skills/avoid-ai-writing/SKILL.md</pre>
-        <p class="copy">Invoke with <span class="mono">/clean-ai-writing &lt;your text&gt;</span>.</p>
+        <p class="copy">Invoke with <strong>/clean-ai-writing &lt;your text&gt;</strong>.</p>
         <h4 class="minor-h">Trigger phrases</h4>
-        <p class="copy"><strong>Rewrite mode:</strong> "Remove AI-isms from this post," "Audit this draft for AI tells," "Make this sound less like AI," "Clean up AI writing in this paragraph."</p>
-        <p class="copy"><strong>Detect mode:</strong> "detect," "flag only," "audit only," "just flag," "scan."</p>
+        <p class="copy"><strong>Rewrite mode:</strong> “Remove AI-isms from this post,” “Audit this draft for AI tells,” “Make this sound less like AI,” “Clean up AI writing in this paragraph.”</p>
+        <p class="copy"><strong>Detect mode:</strong> “detect,” “flag only,” “audit only,” “just flag,” “scan.”</p>
       </div>
     </div>
   </section>
 
-  <hr class="divider">
-
   <!-- PROMPTS -->
   <section class="section" id="prompts">
-    <div class="section-eyebrow">Tools &amp; resources</div>
     <h2 class="section-title">Custom prompts &amp; instruction sets</h2>
     <p class="section-desc">Paste-in prompts you can add to Claude settings, ChatGPT custom instructions, or use as one-off rewrite agents. Suppressing patterns at generation is less work than editing them out.</p>
 
@@ -1408,7 +1155,7 @@ These mimic insight without providing any.
 2. Are you repeating the same point in different words? Say it once.
 3. Does your opening sentence set the scene with a grand statement about
    the state of the world? Delete it, start with the second sentence.</pre>
-      <p class="copy">Add a personal voice note at the end: <em>"I write in a [warm/direct/dry] tone. I'm [knowledgeable/casual/conversational]. I use [British/American] English. I prefer [short sentences/plain language/jargon-free prose]."</em> Even 2–3 sentences makes a measurable difference.</p>
+      <p class="copy">Add a personal voice note at the end: <em>“I write in a [warm/direct/dry] tone. I’m [knowledgeable/casual/conversational]. I use [British/American] English. I prefer [short sentences/plain language/jargon-free prose].”</em> Even 2–3 sentences makes a measurable difference.</p>
       <p class="copy"><a href="https://willfrancis.com/how-to-stop-claude-writing-like-an-ai/">Original article — willfrancis.com</a></p>
     </div>
 
@@ -1416,7 +1163,7 @@ These mimic insight without providing any.
       <div class="tool-card">
         <div class="tool-name">Ruben Hassid — Anti-AI-Voice Editor</div>
         <div class="tool-meta">Paste-and-go rewrite prompt · ChatGPT/Claude</div>
-        <div class="tool-desc">Acts as an "Anti-AI-Voice Editor" that rewrites pasted text "so it reads like a clear, specific human. Not like ChatGPT, Claude, or a generic AI thought leader." Substack-published, high social engagement.</div>
+        <div class="tool-desc">Acts as an “Anti-AI-Voice Editor” that rewrites pasted text “so it reads like a clear, specific human. Not like ChatGPT, Claude, or a generic AI thought leader.” Substack-published, high social engagement.</div>
         <a class="tool-link" href="https://substack.com/@ruben/note/c-181376166">substack.com/@ruben/note/c-181376166</a>
       </div>
       <div class="tool-card">
@@ -1428,17 +1175,14 @@ These mimic insight without providing any.
       <div class="tool-card" style="grid-column: 1 / -1;">
         <div class="tool-name">Voice profile interview method</div>
         <div class="tool-meta">Workflow / methodology</div>
-        <div class="tool-desc">Rather than describing your voice to the AI, paste 5–10 of your best pieces (diverse contexts — a proposal and a blog post teach more than five proposals) and ask the AI to extract patterns and cite specific evidence. You're too close to your own voice to describe it accurately. The AI pattern-matches better from examples than from abstract rules. Key principle: "Most of a good voice profile is about what you reject, not what you prefer."</div>
+        <div class="tool-desc">Rather than describing your voice to the AI, paste 5–10 of your best pieces (diverse contexts — a proposal and a blog post teach more than five proposals) and ask the AI to extract patterns and cite specific evidence. You’re too close to your own voice to describe it accurately. The AI pattern-matches better from examples than from abstract rules. Key principle: “Most of a good voice profile is about what you reject, not what you prefer.”</div>
         <a class="tool-link" href="https://aiforcontentmarketing.ai/how-to-make-claude-write-like-you-the-interview-method/">aiforcontentmarketing.ai/how-to-make-claude-write-like-you-the-interview-method/</a>
       </div>
     </div>
   </section>
 
-  <hr class="divider">
-
   <!-- DETECTORS -->
   <section class="section" id="detectors">
-    <div class="section-eyebrow">Tools &amp; resources</div>
     <h2 class="section-title">Detection tools</h2>
     <p class="section-desc">Useful for two things: knowing what signals trigger them, and knowing whether your editing actually moved the needle. Treat claimed accuracy rates with healthy skepticism.</p>
 
@@ -1458,16 +1202,12 @@ These mimic insight without providing any.
     </div>
   </section>
 
-  <hr class="divider">
-
   <!-- HUMANIZERS -->
   <section class="section" id="humanizers">
-    <div class="section-eyebrow">Tools &amp; resources</div>
     <h2 class="section-title">Humanizer tools</h2>
     <p class="section-desc">Tools that rewrite AI text to score higher on human detection. Mostly content-farm marketing claims. Useful as a first pass; human editorial is still required for authentic voice.</p>
 
     <div class="alert alert-coral" style="margin-bottom:1rem;">
-      <div class="alert-dot"></div>
       <div class="alert-body">
         <div class="alert-title">The limits of humanizer tools</div>
         They can improve perplexity and burstiness scores, but the SEJ/arxiv finding stands — patterns are encoded at the word-distribution level and persist through LLM-to-LLM rewriting. A humanizer is a good first step, not a solution. A piece can pass GPTZero and still read as obviously machine-generated to a human reader with good editorial instincts.
@@ -1496,11 +1236,8 @@ These mimic insight without providing any.
     </div>
   </section>
 
-  <hr class="divider">
-
   <!-- READING -->
   <section class="section" id="reading">
-    <div class="section-eyebrow">Tools &amp; resources</div>
     <h2 class="section-title">Reading list</h2>
     <p class="section-desc">The primary sources behind everything above, annotated. If you read three: the avoid-ai-writing SKILL.md, the Will Francis guide, and the Contently piece.</p>
 
@@ -1532,13 +1269,13 @@ These mimic insight without providing any.
       <div class="tool-card">
         <div class="tool-name">Tom Orbach — Anti-AI Writing Cheat Sheet</div>
         <div class="tool-meta">Marketing Ideas / Substack · paywalled preview</div>
-        <div class="tool-desc">13 fixable AI patterns with before/after fixes, 100+ banned words and phrases, instructions for adding voice back after AI strips it out, and a copy-paste auto-fix prompt. Orbach's framing: the problem is pattern, not tone.</div>
+        <div class="tool-desc">13 fixable AI patterns with before/after fixes, 100+ banned words and phrases, instructions for adding voice back after AI strips it out, and a copy-paste auto-fix prompt. Orbach’s framing: the problem is pattern, not tone.</div>
         <a class="tool-link" href="https://www.marketingideas.com/p/the-anti-ai-writing-cheat-sheet">marketingideas.com/p/the-anti-ai-writing-cheat-sheet</a>
       </div>
       <div class="tool-card">
         <div class="tool-name">Will Francis — How to Stop Claude Writing Like an AI</div>
         <div class="tool-meta">willfrancis.com · prompt + reasoning</div>
-        <div class="tool-desc">Practical guide to using Claude's custom instructions to suppress AI patterns at generation. References Max Planck Institute research finding AI vocabulary words spiked 50%+ in published human writing post-ChatGPT.</div>
+        <div class="tool-desc">Practical guide to using Claude’s custom instructions to suppress AI patterns at generation. References Max Planck Institute research finding AI vocabulary words spiked 50%+ in published human writing post-ChatGPT.</div>
         <a class="tool-link" href="https://willfrancis.com/how-to-stop-claude-writing-like-an-ai/">willfrancis.com/how-to-stop-claude-writing-like-an-ai</a>
       </div>
       <div class="tool-card">
@@ -1554,9 +1291,9 @@ These mimic insight without providing any.
         <a class="tool-link" href="https://originality.ai/blog/perplexity-and-burstiness-in-writing">originality.ai/blog/perplexity-and-burstiness-in-writing</a>
       </div>
       <div class="tool-card">
-        <div class="tool-name">Pangram Labs — AI's Most Overused Phrases</div>
+        <div class="tool-name">Pangram Labs — AI’s Most Overused Phrases</div>
         <div class="tool-meta">Classifier team · 28M human documents</div>
-        <div class="tool-desc">Their key finding: structural regularity outweighs vocabulary as a detection signal. Fixing words while leaving rhythm untouched doesn't fool structural classifiers.</div>
+        <div class="tool-desc">Their key finding: structural regularity outweighs vocabulary as a detection signal. Fixing words while leaving rhythm untouched doesn’t fool structural classifiers.</div>
         <a class="tool-link" href="https://www.pangram.com/blog/walking-through-ai-phrases">pangram.com/blog/walking-through-ai-phrases</a>
       </div>
       <div class="tool-card">
@@ -1568,7 +1305,7 @@ These mimic insight without providing any.
       <div class="tool-card">
         <div class="tool-name">AI Phrase Finder — 50 Most Common AI Phrases</div>
         <div class="tool-meta">Annotated reference</div>
-        <div class="tool-desc">Full annotated list with explanations for why each phrase signals AI authorship. Companion pieces: "The 100 Most Common AI Words" and "100 Common ChatGPT Adjectives."</div>
+        <div class="tool-desc">Full annotated list with explanations for why each phrase signals AI authorship. Companion pieces: “The 100 Most Common AI Words” and “100 Common ChatGPT Adjectives.”</div>
         <a class="tool-link" href="https://aiphrasefinder.com/common-ai-phrases/">aiphrasefinder.com/common-ai-phrases</a>
       </div>
       <div class="tool-card">
@@ -1589,18 +1326,15 @@ These mimic insight without providing any.
         <h4 class="minor-h">ScienceDirect — Linguistic fingerprints in human and AI-generated texts</h4>
         <p class="copy">NLP-based study comparing linguistic features of human vs. AI text in second-language writing contexts. <a href="https://www.sciencedirect.com/science/article/pii/S2215039026000056">sciencedirect.com link</a></p>
         <h4 class="minor-h">Copyleaks — AI has unique stylistic fingerprints</h4>
-        <p class="copy">Research demonstrating model-specific stylistic fingerprints; basis for Copyleaks' attribution methodology. <a href="https://copyleaks.com/blog/copyleaks-research-reveals-which-ai-wrote-what">copyleaks.com/blog/…</a></p>
+        <p class="copy">Research demonstrating model-specific stylistic fingerprints; basis for Copyleaks’ attribution methodology. <a href="https://copyleaks.com/blog/copyleaks-research-reveals-which-ai-wrote-what">copyleaks.com/blog/…</a></p>
         <h4 class="minor-h">Inside Higher Ed — Distinguishing AI- from human-composed essays</h4>
         <p class="copy">Academic context; the educational/writing program perspective on what distinguishes AI composition. <a href="https://www.insidehighered.com/opinion/career-advice/teaching/2024/07/02/ways-distinguish-ai-composed-essays-human-composed-ones">insidehighered.com link</a></p>
       </div>
     </div>
   </section>
 
-  <hr class="divider">
-
   <!-- SOURCES -->
   <section class="section" id="sources">
-    <div class="section-eyebrow">Reference</div>
     <h2 class="section-title">Source index</h2>
     <p class="section-desc">All sources for this resource, alphabetical. Citations throughout the conceptual guide point here.</p>
 
@@ -1616,7 +1350,7 @@ These mimic insight without providing any.
         <li><a href="https://gptzero.me/news/best-ai-detectors/">GPTZero — Most Accurate AI Detectors</a></li>
         <li><a href="https://willfrancis.com/how-to-stop-claude-writing-like-an-ai/">How to Stop Claude Writing Like an AI — Will Francis</a></li>
         <li><a href="https://natesnewsletter.substack.com/p/i-built-a-20-prompt-set-to-kill-ai">I Built a 20-prompt Set to Kill AI Slop — Nate B. Jones</a></li>
-        <li><a href="https://www.pangram.com/blog/walking-through-ai-phrases">Pangram Labs — Walking Through AI's Most Overused Phrases</a></li>
+        <li><a href="https://www.pangram.com/blog/walking-through-ai-phrases">Pangram Labs — Walking Through AI’s Most Overused Phrases</a></li>
         <li><a href="https://www.pangram.com/blog/why-perplexity-and-burstiness-fail-to-detect-ai">Pangram Labs — Why Perplexity and Burstiness Fail</a></li>
         <li><a href="https://originality.ai/blog/perplexity-and-burstiness-in-writing">Perplexity and Burstiness in Writing — Originality.AI</a></li>
         <li><a href="https://www.theaugmentededucator.com/p/the-ten-telltale-signs-of-ai-generated">Ten Telltale Signs of AI-Generated Text — The Augmented Educator</a></li>
@@ -1635,24 +1369,84 @@ These mimic insight without providing any.
 
 </div>
 </main>
+<details class="toc" open>
+  <summary>Contents</summary>
+  <nav aria-label="Contents">
+    <p class="toc-group">Start here</p>
+    <a class="nav-link" href="#overview">Overview</a>
+    <a class="nav-link" href="#how-to-use">How to use this</a>
+    <p class="toc-group">Conceptual guide</p>
+    <a class="nav-link" href="#sounds-like-ai">What “sounds like AI” means</a>
+    <a class="nav-link" href="#vocabulary-tells">Vocabulary tells</a>
+    <a class="nav-link" href="#phrase-tells">Phrase tells</a>
+    <a class="nav-link" href="#structural-tells">Structural tells</a>
+    <a class="nav-link" href="#cognitive-tells">Cognitive and epistemic tells</a>
+    <a class="nav-link" href="#detection">Detection science</a>
+    <a class="nav-link" href="#workflow">Editorial workflow</a>
+    <a class="nav-link" href="#traps">Over-polishing and rewrite threshold</a>
+    <p class="toc-group">Word and phrase list</p>
+    <a class="nav-link" href="#tier-1">Tier 1, always replace</a>
+    <a class="nav-link" href="#tier-2">Tier 2, flag in clusters</a>
+    <a class="nav-link" href="#tier-3">Tier 3, flag by density</a>
+    <a class="nav-link" href="#phrases-cut">Phrases to cut</a>
+    <a class="nav-link" href="#top-50">The 50 most common phrases</a>
+    <a class="nav-link" href="#aidiolects">Per-model signatures</a>
+    <p class="toc-group">Tools and resources</p>
+    <a class="nav-link" href="#skills">Agentic skills</a>
+    <a class="nav-link" href="#prompts">Custom prompts</a>
+    <a class="nav-link" href="#detectors">Detection tools</a>
+    <a class="nav-link" href="#humanizers">Humanizer tools</a>
+    <a class="nav-link" href="#reading">Reading list</a>
+    <a class="nav-link" href="#sources">Sources</a>
+    <p class="toc-foot"><a href="#top">Back to top</a></p>
+  </nav>
+</details>
+</div>
 
 <script>
+// Theme toggle: follows the system until the reader picks one
+(function () {
+  var root = document.documentElement;
+  document.querySelector('.theme-toggle').addEventListener('click', function () {
+    var next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+    root.dataset.theme = next;
+    try { localStorage.setItem('aiw-theme', next); } catch (e) {}
+  });
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function (e) {
+    var saved = null;
+    try { saved = localStorage.getItem('aiw-theme'); } catch (err) {}
+    if (!saved) root.dataset.theme = e.matches ? 'dark' : 'light';
+  });
+})();
+
+// Contents: open on wide screens, collapsed on phones
+(function () {
+  var toc = document.querySelector('.toc');
+  var wide = matchMedia('(min-width: 861px)');
+  function sync() { toc.open = wide.matches; }
+  sync();
+  wide.addEventListener('change', sync);
+  toc.addEventListener('click', function (e) {
+    if (e.target.matches('.nav-link') && !wide.matches) toc.open = false;
+  });
+})();
+
 // Scrollspy
 (function () {
-  const sections = document.querySelectorAll('.section');
-  const navLinks = document.querySelectorAll('.nav-link');
-
-  const observer = new IntersectionObserver(function (entries) {
+  var sections = document.querySelectorAll('.section');
+  var navLinks = document.querySelectorAll('.nav-link');
+  var observer = new IntersectionObserver(function (entries) {
     entries.forEach(function (entry) {
       if (entry.isIntersecting) {
-        const id = entry.target.getAttribute('id');
+        var id = entry.target.getAttribute('id');
         navLinks.forEach(function (l) {
-          l.classList.toggle('active', l.getAttribute('href') === '#' + id);
+          var on = l.getAttribute('href') === '#' + id;
+          l.classList.toggle('active', on);
+          if (on) l.setAttribute('aria-current', 'location'); else l.removeAttribute('aria-current');
         });
       }
     });
   }, { rootMargin: '-25% 0px -65% 0px' });
-
   sections.forEach(function (s) { observer.observe(s); });
 })();
 </script>
