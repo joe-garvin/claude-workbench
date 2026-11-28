@@ -20,6 +20,7 @@ Each skill is a folder with a `SKILL.md` that tells Claude when to use it and ho
 | [task-triage](skills/task-triage) | Sorts the inbox of an Obsidian task list into the right sections with priorities, and waits for approval before moving anything. |
 | [github-push](skills/github-push) | Saves a summary of the current conversation to a private notes repo, filed by project, area, resource, or archive. |
 | [music-discovery-digest](skills/music-discovery-digest) | Runs a weekly new-music digest: pulls from several sources, scores releases against a taste profile, and publishes a page. |
+| [writing-gists](skills/writing-gists) | Turns what happened across a Claude Code project or session into public how-to gists: finds the reusable methods, proposes a list, drafts for outsiders, and publishes only on your OK. |
 
 Several are written around my own setup (an Obsidian vault, a notes repo, my name). To use one, add the folder to Claude as a skill, then read the file and change the names and paths to yours.
 
